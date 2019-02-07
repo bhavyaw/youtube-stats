@@ -12,8 +12,10 @@
   "license": "MIT",
   "devDependencies": {
     "@types/chrome": "0.0.60",
-    "@types/react": "^16.0.40",
-    "@types/react-dom": "^16.0.4",
+    "@types/lodash": "^4.14.120",
+    "@types/qs": "^6.5.1",
+    "@types/react": "^16.8.2",
+    "@types/react-dom": "^16.8.0",
     "css-loader": "^0.28.11",
     "node-sass": "^4.7.2",
     "sass-loader": "^6.0.7",
@@ -27,7 +29,14 @@
     "webpack-merge": "^4.1.4"
   },
   "dependencies": {
-    "react": "^16.2.0",
-    "react-dom": "^16.2.0"
+    "axios": "^0.18.0",
+    "chrome-utils": "^0.0.3",
+    "lodash": "^4.17.11",
+    "object-validate": "^1.0.0",
+    "qs": "^6.6.0",
+    "react": "^16.8.1",
+    "react-dom": "^16.8.1",
+    "receptor": "^2.2.1",
+    "webpack-glob-entries": "^1.0.1"
   }
 }

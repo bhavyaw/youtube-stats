@@ -1,14 +1,27 @@
 {
     "compilerOptions": {
-        "target": "es5",
         "module": "commonjs",
+        "target": "es5",
+        "lib": ["dom", "es2015"],
         "moduleResolution": "node",
-        "rootDir": "src",
-        "outDir": "dist/js",
-        "sourceMap": true,
+        "noImplicitAny": false,
         "jsx": "react",
-        "lib": ["es2015", "dom"],
+        "sourceMap": true,
+        "rootDir": "./src",
+        "outDir": "dist/js",
+        "noEmitOnError": true,
         "experimentalDecorators": true,
-        "allowSyntheticDefaultImports": true
+        "allowSyntheticDefaultImports": true,
+        "downlevelIteration": true,
+        "baseUrl": "./src",
+        "paths": {
+            "common": ["common/*"],
+            "contentScripts": ["contentScripts/*"],
+            "background": ["background/*"],
+            "models": ["models.ts"],
+            "appConstants": ["appConstants.ts"],
+            "config": ["appConfig.ts"],
+            "globals": ["appGlobals.ts"],
+        }
     }
 }
