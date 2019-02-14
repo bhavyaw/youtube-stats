@@ -2,9 +2,7 @@ import { IExtensionEventMessage } from "models";
 import { APP_CONSTANTS } from 'appConstants';
 import * as React from 'react';
 import * as ReactDOM from 'react-dom';
-import Popup from './components/popup/Popup';
-
-console.log("inside popup.ts file!!!");
+import PopupContainer from "./components/popup/popupContainer";
 
 startPopUpScript();
 
@@ -14,16 +12,14 @@ function startPopUpScript() {
 }
 
 function initialize() {
-  console.log("Initializing popup.ts");
   renderPopupComponent();
 }
 
 function renderPopupComponent() {
   // Get the DOM Element that will host our React application
   const rootEl = document.getElementById("pop-up-container");
-  console.log("root element is : ", rootEl);
   // Render the React application to the DOM
-  ReactDOM.render(<Popup />, rootEl);
+  ReactDOM.render(<PopupContainer />, rootEl);
 }
 
 function handleMessageFromBackgroundScript(message: IExtensionEventMessage, sender: any, responseCallback: Function) {

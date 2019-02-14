@@ -1,27 +1,33 @@
-import {ActivePage, IExtensionEventMessage } from '../models';
+import { ActivePage } from '../models';
 
-import trim =  require('lodash/trim');
-
-
-export function sendMessageToBackgroundScript(message : IExtensionEventMessage) {
-  const activeUrl : string = window.location.href;
-  const activePage : ActivePage = getActivePage(activeUrl);
+export function sendMessageToBackgroundScript(message: any, responseCallback?: Function, sender?: string) {
+  const activeUrl: string = window.location.href;
+  const activePage: ActivePage = getActivePage(activeUrl);
 
   message = {
     ...message,
     activePage
   };
 
-  chrome.runtime.sendMessage(message);
+  if (!message.sender && sender) {
+    message['sender'] = sender;
+  }
+  chrome.runtime.sendMessage(message, responseCallback);
 }
 
 export function timeout(ms) {
   return new Promise(resolve => setTimeout(resolve, ms));
 }
 
-export function converUserIdToProperForm(userId : string) : string {
-  userId = userId.replace(".com","");
+export function convertUserIdToSavableForm(userId: string): string {
+  userId = userId.replace(".com", "");
   userId = userId.replace(/\./g, "_"); // replacing underscores with 
+  return userId;
+}
+
+export function convertUserIdToOriginalForm(userId: string): string {
+  userId = userId + ".com";
+  userId = userId.replace(/_/g, ".");
   return userId;
 }
 
@@ -32,29 +38,29 @@ export function createContinuationDataFetchingUrl(nextContinuationDataFetchingPa
 }
 
 
-export function timeDifferenceGreaterThan(currentTime : number, pastTime : number, duration : number, hrsMinsSecs : string) : boolean {
+export function timeDifferenceGreaterThan(currentTime: number, pastTime: number, duration: number, hrsMinsSecs: string): boolean {
   if (!pastTime) {
     return true;
   }
-  
+
   currentTime = currentTime || Date.now();
 
   const timeDifference = currentTime - pastTime;
-  let isTimeDifferenceGreater : boolean = false;
+  let isTimeDifferenceGreater: boolean = false;
 
   switch (hrsMinsSecs) {
-    case "mm" :
+    case "mm":
       const minsInMs = duration * 60 * 60;
       isTimeDifferenceGreater = timeDifference > minsInMs;
-    break;
+      break;
   }
 
   return isTimeDifferenceGreater;
 }
 
-export function getActivePage(url : string) : ActivePage{
-  const urlObj : URL = new URL(url);
-  const pathName : string = urlObj.pathname;
+export function getActivePage(url: string): ActivePage {
+  const urlObj: URL = new URL(url);
+  const pathName: string = urlObj.pathname;
 
   if (pathName === "/") {
     return ActivePage.home;
@@ -67,7 +73,7 @@ export function getActivePage(url : string) : ActivePage{
   }
 }
 
-export function logError(message : string, errorDetails : any, throwError ?: boolean) {
+export function logError(message: string, errorDetails: any, throwError?: boolean) {
   console.log("Reporting Error to admin", message, errorDetails);
 
   if (throwError) {
@@ -75,25 +81,3 @@ export function logError(message : string, errorDetails : any, throwError ?: boo
   }
 }
 
-export function extractUserDetailsFromText(userDetailsString : string) {
-  const rawUserDetailsSplitArr : string[] = userDetailsString.split("(");
-  const name : string = trim(rawUserDetailsSplitArr[0]) ;
-  let id = rawUserDetailsSplitArr[1].replace(")", "");
-  id = converUserIdToProperForm(id);
-  
-  // const userDetails : IYoutubeUser = {
-  //     id, name
-  // };
-
-  // return userDetails;
-}
-
-// const clickTrackingParams = objectGet(ytInitialData, "topbar.desktopTopbarRenderer.topbarButtons[4].topbarMenuButtonRenderer.menuRequest.clickTrackingParams");
-// const trackingParams = objectGet(ytInitialData, "topbar.desktopTopbarRenderer.trackingParams");
-// const csn = objectGet(ytInitialGuideData, "responseContext.webResponseContextExtensionData.ytConfigData.csn");
-// const session_token = objectGet(yt, "config_.XSRF_TOKEN");
-// const pageBuildLabel = objectGet(yt, "config_.PAGE_BUILD_LABEL");
-// const youtubeClientVersion = objectGet(yt, "config_.INNERTUBE_CONTEXT_CLIENT_VERSION");
-// const checksum = objectGet(yt, "config_.VARIANTS_CHECKSUM");
-// const identityToken = objectGet(yt, "config_.ID_TOKEN");
-// const pageCl = objectGet(yt, "config_.PAGE_CL");

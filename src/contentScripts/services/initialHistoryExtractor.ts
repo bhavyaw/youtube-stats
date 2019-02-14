@@ -1,5 +1,5 @@
 import YoutubeVideo from 'background/YoutubeVideo';
-import { sendMessageToBackgroundScript, converUserIdToProperForm } from 'common/utils';
+import { sendMessageToBackgroundScript, convertUserIdToSavableForm } from 'common/utils';
 import { APP_CONSTANTS } from 'appConstants';
 import { loadExternalDataFetchingScript, sendMessageToVariableAccessScript } from './variableScriptCommunicator';
 import { IYoutubeVideo, INewInitialHistoryData } from 'models';
@@ -56,7 +56,7 @@ function variableAccessSriptMessageHandler(message) {
 
 async function saveInitialHistoryData(message) {
   let { data, userId } = message;
-  userId = converUserIdToProperForm(userId);
+  userId = convertUserIdToSavableForm(userId);
   let { newlyWatchedVideos = [], continuationDataFetchingParam }: INewInitialHistoryData = data;
   console.log("inside saving initial history data : ", message, lastSavedVideo);
 
@@ -87,7 +87,10 @@ async function getVideosToSave(newlyWatchedVideos: IYoutubeVideo[], continuation
 
   if (intersectingVideoIndex === 0) {
     console.log("SavingInitialHistoryData : Intersection point coincides with the first video. Do nothing");
-    return;
+    return {
+      newlyWatchedVideos: null,
+      continuationDataFetchingParam: null
+    };
   } else if (intersectingVideoIndex === -1) {
     console.log("SavingInitialHistoryData : Intersection point doesn't exist. Fetching remaining Initial History Data");
     //remaining initial history data case

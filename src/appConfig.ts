@@ -1,4 +1,4 @@
-export enum refreshInterval {
+export enum refreshIntervals {
   Daily = 1,
   Weekly = 7,
   BiWeekly = 14,
@@ -7,5 +7,5 @@ export enum refreshInterval {
 
 
 export const appConfig = {
-  defaultRefreshInterval : refreshInterval.Daily,
+  defaultRefreshInterval: refreshIntervals.Daily,
 };

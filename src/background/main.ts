@@ -4,21 +4,27 @@ import { IExtensionEventMessage, INewInitialHistoryData, IYoutubeVideo } from 'm
 import { APP_CONSTANTS } from 'appConstants';
 import { storeAsync as store } from 'chrome-utils';
 import YoutubeHistory from './YoutubeHistory';
-import { appConfig } from 'config';
+import { appConfig, refreshIntervals } from 'config';
 
 import isNil = require("lodash/isNil");
 import isEmpty = require('lodash/isEmpty');
 import isDate = require("lodash/isDate");
+import appStrings from 'appStrings';
+import { isNumber } from 'lodash';
 
+// @priority : high
+// TODO : close the opened tab once both the initial history extraction and continuation data fetching processes are complete
+
+// @priority : medium
+// TODO : catch and handle error gracefully occuring throughout the app
 
 console.log("inside background script!!! of youtube history chrome extension", store);
 
 // background js globals
-let stopFetchingContinuationData = false;
+let stopFetchingContinuationData = true;
 let lastRun: Date = null;
 // To take care of the missing messages
 const messageQueue: Set<IExtensionEventMessage> = new Set();
-
 let activityControlsTabId: number = 0;
 
 initialize();
@@ -27,10 +33,26 @@ function initialize() {
   console.log("Initializing Background script...");
   runRefreshCycle();
   listenToTabEvents();
-  chrome.runtime.onMessage.addListener(contentScriptMessageHandler);
+  chrome.runtime.onMessage.addListener(function (message: IExtensionEventMessage, sender: any, sendResponseFunc: Function) {
+    if (message.sender === APP_CONSTANTS.SENDER.POPUP) {
+      (handleMessagesFromPopupScript as any)(...arguments);
+    } else {
+      (handleMessagesFromContentScript as any)(...arguments);
+    }
+    return true;
+  });
 }
 
 function onInstallHandler() {
+  // @priority - very low
+  // TODO : create simple interface for notifications
+  chrome.notifications.create({
+    message: `Running Refresh Cycle | Opening activity control tab`,
+    type: `basic`,
+    iconUrl: `../icon48.png`,
+    title: `Testing Notifications`
+  });
+
   chrome.tabs.create({
     active: false,
     pinned: true,
@@ -50,8 +72,8 @@ function listenToTabEvents() {
       const url: URL = new URL(tab.url);
       const completeUrl: string = url.host + url.pathname;
 
-      if (activityControlsPageUrlRegex.test(completeUrl) && tab.title === "Activity controls") {
-        console.log("Activity controls tab opened");
+      if (activityControlsPageUrlRegex.test(completeUrl) && tab.title === "Activity controls" && tab.id === activityControlsTabId) {
+        console.log("Activity controls tab opened via extension programmatically");
         runPreRefreshCycleChecks(tab);
       }
     }
@@ -64,7 +86,7 @@ function listenToTabEvents() {
   });
 }
 
-async function contentScriptMessageHandler(message: IExtensionEventMessage, sender: any, sendResponseFunc: Function): Promise<any> {
+async function handleMessagesFromContentScript(message: IExtensionEventMessage, sender: any, sendResponseFunc: Function): Promise<any> {
   console.log("inside content script message handler : ", message, sender);
   if (sender.tab) {
     const messageType: string = message.type;
@@ -112,13 +134,33 @@ async function contentScriptMessageHandler(message: IExtensionEventMessage, send
         console.log("Continuation data received from content script : ", data);
         saveContinuationData(tabId, data, userId, lastRun);
         break;
-
     }
   }
 }
 
+function handleMessagesFromPopupScript(message: IExtensionEventMessage, sender, sendResponseFunc) {
+  console.log(`Handling messages from popup script : `, message);
+
+  const messageType: string = message.type;
+  const data: any = message.data;
+
+  switch (messageType) {
+    case APP_CONSTANTS.PROCESSES.MANUAL_RUN_REFRESH_CYCLE:
+      console.log(`Manually running refresh cycle for user`);
+      runRefreshCycle();
+      break;
+
+    case APP_CONSTANTS.PROCESSES.UPDATE_REFRESH_INTERVAL:
+      console.log(`Update refresh interval`);
+      const newRefreshInterval: number = data.newRefreshInterval;
+      updateRefreshInterval(newRefreshInterval, sendResponseFunc);
+      break;
+  }
+}
+
+// NOTE : refresh interval cannot be per user because we get userId after opening the tab and not before
 async function runRefreshCycle() {
-  console.log(`Inside run refresh cycle...`);
+  console.log(`\n====> Inside run refresh cycle...\n`);
   const lastRunString: string = await store.get(`lastRun`);
   let activeRefreshInterval: number = await store.get(`activeRefreshInterval`);
   const lastIntervalChangeDateString: string = await store.get(`activeIntervalChangeDate`);
@@ -135,6 +177,22 @@ async function runRefreshCycle() {
     runRefreshCycle = checkRefreshCycle(lastRunDate, activeRefreshInterval);
   }
 
+  /**
+   * TODO : currently we make sure that no refresh cycle is currently running by checking activity control tab is open,
+   * if it is open we assume that the refresh cycle is running and we don't run any new refresh cycle.
+   * Later if time : Actually check whether the refresh cycle is running in the open tab by some means...and if not then re-run refresh 
+   * in the tab only by refreshing it
+   */
+
+  if (activityControlsTabId) {
+    chrome.notifications.create({
+      message: appStrings.alreadyRefreshing,
+      type: `basic`,
+      title: `Notice`,
+      iconUrl: `../icon48.png`
+    });
+    return;
+  }
   if (runRefreshCycle) {
     onInstallHandler();
   }
@@ -151,6 +209,30 @@ function runPreRefreshCycleChecks(activeTab: chrome.tabs.Tab) {
   }
 }
 
+async function updateRefreshInterval(newRefreshInterval: number, sendResponseFunc) {
+  if (newRefreshInterval && isNumber(newRefreshInterval)) {
+    try {
+      await store.set(`refreshInterval`, newRefreshInterval);
+      const refreshIntervalUpdateTime: Date = new Date();
+      const refreshIntervalUpdateTimeString: string = refreshIntervalUpdateTime.toISOString();
+      await store.set(`activeIntervalChangeDate`, refreshIntervalUpdateTimeString);
+
+      sendResponseFunc({
+        newRefreshInterval
+      });
+    } catch (error) {
+      chrome.notifications.create({
+        message: `Some error occured in updating refresh Interval`,
+        type: "basic",
+        title: "Error",
+        iconUrl: `../icon48.png`
+      });
+    }
+  } else {
+    throw new Error(`No refresh interval or incorrect received from popup.ts : ${newRefreshInterval}`);
+  }
+}
+
 async function saveInitialHistoryData(activeTabId: number, latestHistoryData: INewInitialHistoryData, userId: string, lastRun: Date) {
   console.log(" SaveInitialHistoryData() : New initial History to save", latestHistoryData, userId, "\n\n");
   const youtubeHistory: YoutubeHistory = new YoutubeHistory(latestHistoryData, userId, lastRun);
@@ -163,12 +245,14 @@ async function saveInitialHistoryData(activeTabId: number, latestHistoryData: IN
   // rest of the times it will happen of its own
   if (isNil(savedContinuationDataFetchingParam) && !stopFetchingContinuationData) {
     console.log(`SaveInitialHistoryData() : No saved continuation data fetching parameters found...saving c.d.f.p`, "\n\n");
-    await youtubeHistory.updateContinuationDataFetchingParam();
     if (!isNil(newContinuationDataFetchingParam)) {
+      await youtubeHistory.updateContinuationDataFetchingParam();
       console.log(`SaveInitialHistoryData() : Saving new Continuation Data Fetching Param`, "\n\n");
       fetchContinuationData(activeTabId, userId, newContinuationDataFetchingParam);
+      return;
     }
   }
+
 }
 
 

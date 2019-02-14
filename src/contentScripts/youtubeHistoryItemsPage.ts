@@ -1,4 +1,4 @@
-import { sendMessageToBackgroundScript, converUserIdToProperForm } from 'common/utils';
+import { sendMessageToBackgroundScript, convertUserIdToSavableForm } from 'common/utils';
 import { APP_CONSTANTS } from "appConstants";
 import { IExtensionEventMessage, IYoutubeVideo } from "models";
 import { startDataExtractionProcess } from "contentScripts/services/initialHistoryExtractor";
@@ -65,7 +65,7 @@ function variableAccessSriptMessageHandler(message) {
   if (type === APP_CONSTANTS.DATA_EXCHANGE_TYPE.USER_ID) {
     console.log("User Id received from variable access script. Sending it to background script", message.userId);
     let { data, userId } = message;
-    userId = converUserIdToProperForm(userId);
+    userId = convertUserIdToSavableForm(userId);
     const { appVersion } = data;
 
     set(appGlobals, "appVersion", appVersion);

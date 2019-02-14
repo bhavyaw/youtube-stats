@@ -39,6 +39,9 @@
         "tabs",
         "storage",
         "unlimitedStorage",
-        "<all_urls>"
+        "<all_urls>",
+        "notifications",
+        "identity",
+        "identity.email"
     ]
 }

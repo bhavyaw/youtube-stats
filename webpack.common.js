@@ -67,6 +67,7 @@ module.exports = {
       appConstants: path.resolve(__dirname, "src/appConstants"),
       config: path.resolve(__dirname, "src/appConfig"),
       globals: path.resolve(__dirname, "src/appGlobals"),
+      appStrings: path.resolve(__dirname, "src/appStrings")
     }
   }
 };
