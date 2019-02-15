@@ -151,10 +151,13 @@ function handleMessagesFromPopupScript(message: IExtensionEventMessage, sender, 
       break;
 
     case APP_CONSTANTS.PROCESSES.UPDATE_REFRESH_INTERVAL:
-      console.log(`Update refresh interval`);
       const newRefreshInterval: number = data.newRefreshInterval;
       updateRefreshInterval(newRefreshInterval, sendResponseFunc);
       break;
+
+    case APP_CONSTANTS.DATA_EXCHANGE_TYPE.FETCH_STATS_FOR_INTERVAL:
+      const newStatInterval: number = data.newStatInterval;
+      console.log(`Generating stats for interval :`, newStatInterval);
   }
 }
 

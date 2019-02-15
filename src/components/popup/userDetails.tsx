@@ -17,7 +17,9 @@ class UserDetails extends React.Component<Props, State> {
   }
 
   handleUserChange = (e) => {
-    const newUserId: string = e.value;
+    const newUserId: string = e.target.value;
+    console.log(`Inside handle user change : `, e, newUserId);
+
     if (newUserId !== this.props.selectedUserId) {
       console.log("user changed : ", newUserId);
       this.props.onUserChange(newUserId);

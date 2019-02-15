@@ -6,6 +6,7 @@ import { IHistoryStats, IExtensionEventMessage } from 'models';
 import { APP_CONSTANTS } from 'appConstants';
 import { appConfig, refreshIntervals } from "config";
 import RefreshInterval from './refreshIntervals';
+import HistoryStats from './historyStats';
 
 export interface Props {
 
@@ -164,8 +165,20 @@ class PopupContainer extends React.Component<Props, State> {
     });
   }
 
+  fetchStatIntervalData = async (newStatInterval) => {
+    console.log(`Fetching stats for interval : `, newStatInterval);
+    sendMessageToBackgroundScript({
+      type: APP_CONSTANTS.DATA_EXCHANGE_TYPE.FETCH_STATS_FOR_INTERVAL,
+      data: {
+        newStatInterval
+      }
+    }, (response) => {
+      console.log(`Post stat interval updated!!!`);
+    }, APP_CONSTANTS.SENDER.POPUP);
+  }
+
   render() {
-    const { noUsers, selectedUser, users, lastRunDate = "", activeRefreshInterval } = this.state;
+    const { noUsers, selectedUser, users, lastRunDate = "", activeRefreshInterval, historyStats } = this.state;
 
     return (
       <section>
@@ -182,9 +195,15 @@ class PopupContainer extends React.Component<Props, State> {
                   selectedUserId={selectedUser}
                   onRefreshClick={this.refresHistoryStats}
                 />
+                <br />
                 <RefreshInterval
                   activeRefreshInterval={activeRefreshInterval}
                   onRefreshIntervalChange={this.updateRefreshInterval}
+                />
+                <br />
+                <HistoryStats
+                  onStatIntervalChange={this.fetchStatIntervalData}
+                  historyStats={historyStats}
                 />
               </section>
             )
