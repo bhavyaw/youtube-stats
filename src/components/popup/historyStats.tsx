@@ -1,19 +1,20 @@
 import * as React from 'react';
 import HistoryTabularStats from './tabularStats';
 import HistoryGraphicalStats from './graphicalStats';
-import { statsIntervalOptions, statsDisplayType, appConfig } from "config";
-import forEach = require("lodash/forEach");
+import { StatsIntervalOptions, StatsDisplayTypes, appConfig } from "config";
 import { IHistoryStats } from 'models';
 import isEmpty = require('lodash/isEmpty');
+import { convertEnumToArray } from 'common/utils';
 
 export interface Props {
-  historyStats: IHistoryStats,
-  onStatIntervalChange(newStatInterval: string)
+  fetchStats(activeStatInterval: number, selectedDate: Date): void,
+  historyStats: any
 }
 
 export interface State {
-  selectedStatInterval: string,
-  selectedStatDisplayType: string
+  selectedStatInterval: number,
+  selectedStatDisplayType: number,
+  selectedDate: Date
 }
 
 class HistoryStats extends React.Component<Props, State> {
@@ -25,31 +26,29 @@ class HistoryStats extends React.Component<Props, State> {
     super(props);
     this.state = {
       selectedStatInterval: appConfig.defaultStatsInterval,
-      selectedStatDisplayType: appConfig.defaultStatDisplayType
+      selectedStatDisplayType: appConfig.defaultStatDisplayType,
+      selectedDate: new Date()
     };
 
     console.log(`historyStats constructor : `, this.state, appConfig);
-    forEach(statsIntervalOptions, (key, value) => {
-      this.statsIntervalOptions.push({
-        key,
-        value
-      });
-    });
+    this.statsIntervalOptions = convertEnumToArray(StatsIntervalOptions);
+    this.statsDisplayType = convertEnumToArray(StatsDisplayTypes);
+  }
 
+  componentDidMount() {
+    this.fetchInitialStats();
+  }
 
-    forEach(statsDisplayType, (key, value) => {
-      this.statsDisplayType.push({
-        key,
-        value
-      });
-    });
+  fetchInitialStats() {
+    const activeStatsInterval: number = appConfig.defaultStatsInterval;
+    this.props.fetchStats(activeStatsInterval, this.state.selectedDate);
   }
 
   handleStatIntervalChange = (e) => {
     console.log(`Stat interval changed : `, e, e.target, e.target.value);
     // this.setState()
     const newStatInterval: string = e.target.value;
-    this.props.onStatIntervalChange(newStatInterval);
+    // this.props.onStatIntervalChange(newStatInterval);
   }
 
   handleStatDisplayTypeChange = (newDisplayTypeValue) => {
@@ -63,20 +62,20 @@ class HistoryStats extends React.Component<Props, State> {
     const { historyStats } = this.props;
     const { selectedStatInterval, selectedStatDisplayType } = this.state;
 
-    console.log(`History stats render function : `, historyStats, selectedStatInterval, selectedStatDisplayType);
+    console.log(`History stats render function : `, selectedStatInterval, selectedStatDisplayType);
     return (
       <section>
         {
-          !isEmpty(historyStats)
+          !isEmpty({})
           &&
           <div>
             (<select
               value={selectedStatInterval}
               onChange={this.handleStatIntervalChange}>
               {
-                this.statsIntervalOptions.map(({ key, value }) =>
+                this.statsIntervalOptions.map(({ name, value }) =>
                   (
-                    <option value={key} key={key}>{value}</option>
+                    <option value={value} key={value}>{value}</option>
                   ))
               }
             </select>
@@ -96,7 +95,7 @@ class HistoryStats extends React.Component<Props, State> {
             </div>
 
             {
-              (selectedStatDisplayType === "Table")
+              (selectedStatDisplayType === StatsDisplayTypes.Table)
                 ? <HistoryTabularStats
                   historyStats={historyStats}
                 />

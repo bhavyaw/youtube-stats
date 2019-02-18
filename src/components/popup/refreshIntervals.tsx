@@ -1,5 +1,5 @@
 import * as React from 'react';
-import { refreshIntervals } from "config";
+import { RefreshIntervals } from "config";
 
 export interface Props {
   activeRefreshInterval: number,
@@ -16,9 +16,9 @@ class RefreshInterval extends React.Component<Props, State> {
   constructor(props: Props) {
     super(props);
     this.state = {};
-    for (const key in refreshIntervals) {
-      if (refreshIntervals.hasOwnProperty(key)) {
-        const value = refreshIntervals[key];
+    for (const key in RefreshIntervals) {
+      if (RefreshIntervals.hasOwnProperty(key)) {
+        const value = RefreshIntervals[key];
         if (!isNaN(Number(value))) {
           this.refreshIntervalOptions.push({
             intervalName: key,
@@ -28,7 +28,7 @@ class RefreshInterval extends React.Component<Props, State> {
       }
     }
 
-    console.log(`Refresh Intervals are  : `, refreshIntervals, this.refreshIntervalOptions);
+    console.log(`Refresh Intervals are  : `, RefreshIntervals, this.refreshIntervalOptions);
   }
 
   handleRefreshIntervalChange(newRefreshIntervalValue, e) {

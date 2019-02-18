@@ -81,3 +81,24 @@ export function logError(message: string, errorDetails: any, throwError?: boolea
   }
 }
 
+export function convertEnumToArray(enumType): Array<{
+  name: string,
+  value: string
+}> {
+  const arr: Array<{
+    name: string,
+    value: string
+  }> = [];
+
+  Object.keys(enumType).forEach(name => {
+    const value = enumType[name];
+    if (!isNaN(Number(value))) {
+      arr.push({
+        name,
+        value
+      });
+    }
+  });
+
+  return arr;
+}

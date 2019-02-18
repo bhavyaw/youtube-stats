@@ -2,9 +2,9 @@ import * as React from 'react';
 import PopUpHeader from './PopupRefresh';
 import { storeAsync as store } from 'chrome-utils';
 import { convertUserIdToOriginalForm, sendMessageToBackgroundScript } from 'common/utils';
-import { IHistoryStats, IExtensionEventMessage } from 'models';
+import { IHistoryStats, IExtensionEventMessage, IYoutubeDayStats, IYoutubeWeekStats } from 'models';
 import { APP_CONSTANTS } from 'appConstants';
-import { appConfig, refreshIntervals } from "config";
+import { appConfig, StatsIntervalOptions } from "config";
 import RefreshInterval from './refreshIntervals';
 import HistoryStats from './historyStats';
 
@@ -14,11 +14,12 @@ export interface Props {
 
 export interface State {
   noUsers: boolean,
-  historyStats?: IHistoryStats,
+  // historyStats?: IHistoryStats,
   users?: Array<any>,
   lastRunDate?: string,
   selectedUser: string,
-  activeRefreshInterval: number
+  activeRefreshInterval: number,
+  historyStats?: any
 }
 
 class PopupContainer extends React.Component<Props, State> {
@@ -58,7 +59,7 @@ class PopupContainer extends React.Component<Props, State> {
                   console.log("inside refreshHistoryStats : ", historyStats, lastRunDate, selectedUser);
                   this.setState({
                     ...this.state,
-                    historyStats,
+                    // historyStats,
                     lastRunDate,
                     selectedUser: selectedUser
                   });
@@ -78,10 +79,10 @@ class PopupContainer extends React.Component<Props, State> {
     const lastActiveUserId = await store.get(`lastActiveUser`) || "";
 
     if (lastActiveUserId) {
-      const { historyStats, lastRunDate } = await this.getHistoryDataForUser(lastActiveUserId);
+      const { lastRunDate } = await this.getHistoryDataForUser(lastActiveUserId);
       let users: Array<any> = await store.get(`users`);
       let activeRefreshInterval: number = await store.get(`activeRefreshInterval`) || appConfig.defaultRefreshInterval;
-      console.log(`fetchInitialHistoryDataForLastActiveUser : `, historyStats, users, lastRunDate);
+      console.log(`fetchInitialHistoryDataForLastActiveUser : `, users, lastRunDate);
 
       users = users.map(userId => {
         return {
@@ -93,7 +94,7 @@ class PopupContainer extends React.Component<Props, State> {
       this.setState({
         noUsers: false,
         selectedUser: lastActiveUserId,
-        historyStats,
+        // historyStats,
         users,
         lastRunDate,
         activeRefreshInterval
@@ -148,12 +149,12 @@ class PopupContainer extends React.Component<Props, State> {
   }
 
   async getHistoryDataForUser(userId): Promise<any> {
-    const historyStats: IHistoryStats = await store.get(`historyStats.${userId}`);
+    // const historyStats: IHistoryStats = await store.get(`historyStats.${userId}`);
     const lastRunTime: string = await store.get(`lastRun.${userId}`);
     const lastRunDate: string = this.getFormattedLastRunTime(lastRunTime);
 
     return {
-      historyStats,
+      // historyStats,
       lastRunDate
     };
   }
@@ -165,12 +166,14 @@ class PopupContainer extends React.Component<Props, State> {
     });
   }
 
-  fetchStatIntervalData = async (newStatInterval) => {
-    console.log(`Fetching stats for interval : `, newStatInterval);
+  fetchStats(userId, statInterval: StatsIntervalOptions, date: Date) {
     sendMessageToBackgroundScript({
       type: APP_CONSTANTS.DATA_EXCHANGE_TYPE.FETCH_STATS_FOR_INTERVAL,
       data: {
-        newStatInterval
+        statInterval,
+        date,
+        userId,
+        loadCount: appConfig.defaultStatsLoadCount
       }
     }, (response) => {
       console.log(`Post stat interval updated!!!`);
@@ -202,7 +205,7 @@ class PopupContainer extends React.Component<Props, State> {
                 />
                 <br />
                 <HistoryStats
-                  onStatIntervalChange={this.fetchStatIntervalData}
+                  fetchStats={this.fetchStats.bind(this, selectedUser)}
                   historyStats={historyStats}
                 />
               </section>

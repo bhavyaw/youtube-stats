@@ -1,16 +1,15 @@
-console.log("inside background script!!!....");
-
 import { IExtensionEventMessage, INewInitialHistoryData, IYoutubeVideo } from 'models';
 import { APP_CONSTANTS } from 'appConstants';
 import { storeAsync as store } from 'chrome-utils';
 import YoutubeHistory from './YoutubeHistory';
-import { appConfig, refreshIntervals } from 'config';
+import { appConfig, StatsIntervalOptions } from 'config';
 
 import isNil = require("lodash/isNil");
 import isEmpty = require('lodash/isEmpty');
 import isDate = require("lodash/isDate");
 import appStrings from 'appStrings';
 import { isNumber } from 'lodash';
+import YoutubeHistoryStats from './services/YoutubeHistoryStats';
 
 // @priority : high
 // TODO : close the opened tab once both the initial history extraction and continuation data fetching processes are complete
@@ -138,7 +137,7 @@ async function handleMessagesFromContentScript(message: IExtensionEventMessage, 
   }
 }
 
-function handleMessagesFromPopupScript(message: IExtensionEventMessage, sender, sendResponseFunc) {
+async function handleMessagesFromPopupScript(message: IExtensionEventMessage, sender, sendResponseFunc) {
   console.log(`Handling messages from popup script : `, message);
 
   const messageType: string = message.type;
@@ -156,8 +155,10 @@ function handleMessagesFromPopupScript(message: IExtensionEventMessage, sender, 
       break;
 
     case APP_CONSTANTS.DATA_EXCHANGE_TYPE.FETCH_STATS_FOR_INTERVAL:
-      const newStatInterval: number = data.newStatInterval;
-      console.log(`Generating stats for interval :`, newStatInterval);
+      const { statsInterval, date, loadCount, userId }: { statsInterval: StatsIntervalOptions, date, loadCount: number, userId: string } = data;
+      console.log(`Generating stats for interval :`, statsInterval, date);
+      const historyStats: any = await YoutubeHistoryStats.getStatsForInterval(statsInterval, date, userId, loadCount);
+      sendResponseFunc(historyStats);
   }
 }
 
@@ -255,7 +256,6 @@ async function saveInitialHistoryData(activeTabId: number, latestHistoryData: IN
       return;
     }
   }
-
 }
 
 
