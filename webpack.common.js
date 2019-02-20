@@ -27,6 +27,8 @@ console.log("\n\nMain Entries : ", mainEntries, "\n\nCommon Entries : ", commonE
 
 
 module.exports = {
+  mode: "development",
+  devtool: "eval-source-map",
   entry: Object.assign(mainEntries, {
     common: values(commonEntries),
     vendor: ['object-validate', 'receptor', 'qs', 'axios', 'chrome-utils', 'lodash', 'react', 'react-dom'],

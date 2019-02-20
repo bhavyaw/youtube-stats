@@ -7,12 +7,12 @@ import isEmpty = require('lodash/isEmpty');
 import { convertEnumToArray } from 'common/utils';
 
 export interface Props {
-  fetchStats(activeStatInterval: number, selectedDate: Date): void,
-  historyStats: any
+  fetchStats(selectedDate: Date, activeStatInterval ?: number): void,
+  historyStats: any,
+  selectedStatInterval: number
 }
 
 export interface State {
-  selectedStatInterval: number,
   selectedStatDisplayType: number,
   selectedDate: Date
 }
@@ -25,7 +25,6 @@ class HistoryStats extends React.Component<Props, State> {
   constructor(props: Props) {
     super(props);
     this.state = {
-      selectedStatInterval: appConfig.defaultStatsInterval,
       selectedStatDisplayType: appConfig.defaultStatDisplayType,
       selectedDate: new Date()
     };
@@ -40,15 +39,14 @@ class HistoryStats extends React.Component<Props, State> {
   }
 
   fetchInitialStats() {
-    const activeStatsInterval: number = appConfig.defaultStatsInterval;
-    this.props.fetchStats(activeStatsInterval, this.state.selectedDate);
+    this.props.fetchStats(this.state.selectedDate);
   }
 
   handleStatIntervalChange = (e) => {
     console.log(`Stat interval changed : `, e, e.target, e.target.value);
     // this.setState()
-    const newStatInterval: string = e.target.value;
-    // this.props.onStatIntervalChange(newStatInterval);
+    const newStatInterval: number = Number(e.target.value);
+    this.props.fetchStats(newStatInterval, this.state.selectedDate);
   }
 
   handleStatDisplayTypeChange = (newDisplayTypeValue) => {
@@ -59,24 +57,23 @@ class HistoryStats extends React.Component<Props, State> {
   }
 
   render() {
-    const { historyStats } = this.props;
-    const { selectedStatInterval, selectedStatDisplayType } = this.state;
+    const { historyStats, selectedStatInterval } = this.props;
+    const { selectedStatDisplayType } = this.state;
 
     console.log(`History stats render function : `, selectedStatInterval, selectedStatDisplayType);
     return (
       <section>
         {
-          !isEmpty({})
+          selectedStatInterval
           &&
           <div>
             (<select
               value={selectedStatInterval}
               onChange={this.handleStatIntervalChange}>
               {
-                this.statsIntervalOptions.map(({ name, value }) =>
-                  (
-                    <option value={value} key={value}>{value}</option>
-                  ))
+                this.statsIntervalOptions.map(({ name, value }) => (
+                  <option value={value} key={`key_${value}`}>{name}</option>
+                ))
               }
             </select>
 
@@ -84,11 +81,11 @@ class HistoryStats extends React.Component<Props, State> {
 
             <div>
               {
-                this.statsDisplayType.map(({ key: displayTypeValue, value: displayTypeName }) => (
-                  <span className={selectedStatDisplayType === displayTypeValue ? "active" : ""}
-                    key={`key_${displayTypeValue}`}
-                    onClick={this.handleStatDisplayTypeChange.bind(this, displayTypeValue)}>
-                    {displayTypeName}
+                this.statsDisplayType.map(({ name, value }) => (
+                  <span className={selectedStatDisplayType === value ? "active" : ""}
+                    key={`key_${name}`}
+                    onClick={this.handleStatDisplayTypeChange.bind(this, value)}>
+                    {name}
                   </span>
                 ))
               }

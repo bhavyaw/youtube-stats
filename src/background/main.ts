@@ -20,7 +20,7 @@ import YoutubeHistoryStats from './services/YoutubeHistoryStats';
 console.log("inside background script!!! of youtube history chrome extension", store);
 
 // background js globals
-let stopFetchingContinuationData = true;
+let stopFetchingContinuationData = false;
 let lastRun: Date = null;
 // To take care of the missing messages
 const messageQueue: Set<IExtensionEventMessage> = new Set();
