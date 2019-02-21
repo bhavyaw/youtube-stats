@@ -4,7 +4,9 @@ import { IHistoryStats, IYoutubeDatesStats, IYoutubeVideo, IYoutubeHistory, IYou
 import { storeAsync as store } from 'chrome-utils';
 import { formatDate } from './utils';
 import isString = require('lodash/isString');
-import { StatsIntervalOptions } from 'config';
+import { StatsIntervalOptions, statDisplayFields } from 'config';
+import isUndefined = require('lodash/isUndefined');
+import isNil = require('lodash/isNil');
 
 
 export default class YoutubeHistoryStats implements IHistoryStats {
@@ -142,7 +144,7 @@ export default class YoutubeHistoryStats implements IHistoryStats {
     let tempEndDate = new Date(endDate);
 
     const videoHistory: IYoutubeHistory = await store.get(`videoHistory.${userId}`);
-    const datesStats: any = {};
+    let lastWatchedVideo: any;
     let totalCount = 0, totalWatchedDuration = 0, dailyAverage = 0, daysDiff = 0, totalActiveDays = 0, fromDateEqualToEndDate = true;
 
     do {
@@ -173,32 +175,31 @@ export default class YoutubeHistoryStats implements IHistoryStats {
 
       // last cycle
       if (fromDateEqualToEndDate) {
-        datesStats.lastWatchedVideo = lastWatchedVideoOfDay;
+        lastWatchedVideo = lastWatchedVideoOfDay;
       }
     } while (!fromDateEqualToEndDate)
 
     dailyAverage = Math.round((totalWatchedDuration / daysDiff) * 100) / 100;
 
-    let stats: any = {
-      totalCount,
-      totalWatchedDuration,
-      totalActiveDays
-    };
+    if (totalCount > 0) {
+      let stats: any = {
+        lastWatchedVideo,
+        totalCount,
+        totalWatchedDuration
+      };
+  
+      if ( statsInterval === StatsIntervalOptions.Daily ) {
+        stats.watchedOnDate = fromDate.toISOString();
+        stats.formattedDate = formatDate(fromDate, "DDD, dd mmm'yy");
+      } else {
+        stats.watchedOnDate = [fromDate.toISOString(), endDate.toISOString()];
+        stats.formattedDate = `${formatDate(fromDate, "DDD, dd mmm'yy")} - ${formatDate(endDate, "DDD, dd mmm'yy")}`;
+        stats.dailyAverage = dailyAverage;
+        stats.totalActiveDays = totalActiveDays;
+      }
 
-    if (
-      statsInterval === StatsIntervalOptions.Weekly ||
-      statsInterval === StatsIntervalOptions.Monthly ||
-      statsInterval === StatsIntervalOptions.Yearly
-    ) {
-      stats.dailyAverage = dailyAverage;
-      stats.dateRange = [fromDate.toISOString(), endDate.toISOString()];
-    } else {
-      stats.watchedOnDate = fromDate.toISOString();
+      return stats;
     }
-
-    stats = { ...stats, ...datesStats };
-    console.log(`Inside getStatForDates : generated stats for stats interval : ${statsInterval}, fromDate : ${fromDate}, endDate : ${endDate} are : `, stats);
-    return stats;
   }
 
   private static getStatForDay(videoHistory: IYoutubeHistory, date: Date, totalActiveDays: number) {
@@ -284,8 +285,9 @@ export default class YoutubeHistoryStats implements IHistoryStats {
       }
     }
 
-    const finalStats = await Promise.all(statsPromises);
-    console.log(`Stats for ${statsInterval} and date : ${date.toDateString()} are : `, finalStats, statsPromises);
+    let finalStats = await Promise.all(statsPromises);
+    finalStats = finalStats.filter(finalStats => !isUndefined(finalStats));
+    console.log(`Stats for ${statsInterval} and date : ${date.toDateString()} are : `, finalStats);
     return finalStats;
   }
 }

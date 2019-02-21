@@ -3,18 +3,21 @@ import HistoryTabularStats from './tabularStats';
 import HistoryGraphicalStats from './graphicalStats';
 import { StatsIntervalOptions, StatsDisplayTypes, appConfig } from "config";
 import { IHistoryStats } from 'models';
-import isEmpty = require('lodash/isEmpty');
 import { convertEnumToArray } from 'common/utils';
+import DatePicker from "react-datepicker";
+
+import "react-datepicker/dist/react-datepicker.css";
+ 
 
 export interface Props {
-  fetchStats(selectedDate: Date, activeStatInterval ?: number): void,
+  fetchStats(selectedDate ?: Date, activeStatInterval ?: number): void,
   historyStats: any,
-  selectedStatInterval: number
+  selectedStatsInterval: number,
+  selectedDate: Date
 }
 
 export interface State {
-  selectedStatDisplayType: number,
-  selectedDate: Date
+  selectedStatDisplayType: number
 }
 
 class HistoryStats extends React.Component<Props, State> {
@@ -24,9 +27,8 @@ class HistoryStats extends React.Component<Props, State> {
 
   constructor(props: Props) {
     super(props);
-    this.state = {
-      selectedStatDisplayType: appConfig.defaultStatDisplayType,
-      selectedDate: new Date()
+    this.state = {  
+      selectedStatDisplayType: appConfig.defaultStatDisplayType
     };
 
     console.log(`historyStats constructor : `, this.state, appConfig);
@@ -39,14 +41,20 @@ class HistoryStats extends React.Component<Props, State> {
   }
 
   fetchInitialStats() {
-    this.props.fetchStats(this.state.selectedDate);
+    console.log(`Fetching initial stats : `);
+    this.props.fetchStats();
   }
 
   handleStatIntervalChange = (e) => {
-    console.log(`Stat interval changed : `, e, e.target, e.target.value);
+    console.log(`Stat interval changed : `, e.target.value);
     // this.setState()
     const newStatInterval: number = Number(e.target.value);
-    this.props.fetchStats(newStatInterval, this.state.selectedDate);
+    this.props.fetchStats(undefined, newStatInterval);
+  }
+
+  handleStatsDateChange = (newSelectedDate) => {
+    console.log(`Inside handle active date change...`, newSelectedDate);
+    this.props.fetchStats(newSelectedDate);
   }
 
   handleStatDisplayTypeChange = (newDisplayTypeValue) => {
@@ -56,19 +64,24 @@ class HistoryStats extends React.Component<Props, State> {
     });
   }
 
+
   render() {
-    const { historyStats, selectedStatInterval } = this.props;
+    const { historyStats, selectedStatsInterval, selectedDate } = this.props;
     const { selectedStatDisplayType } = this.state;
 
-    console.log(`History stats render function : `, selectedStatInterval, selectedStatDisplayType);
+    console.log(`History stats render function : `, selectedStatsInterval, selectedStatDisplayType, historyStats);
     return (
       <section>
         {
-          selectedStatInterval
+          selectedStatsInterval
           &&
           <div>
+            <DatePicker 
+               selected={selectedDate}
+               onChange={this.handleStatsDateChange}
+            />
             (<select
-              value={selectedStatInterval}
+              value={selectedStatsInterval}
               onChange={this.handleStatIntervalChange}>
               {
                 this.statsIntervalOptions.map(({ name, value }) => (
@@ -94,8 +107,9 @@ class HistoryStats extends React.Component<Props, State> {
             {
               (selectedStatDisplayType === StatsDisplayTypes.Table)
                 ? <HistoryTabularStats
-                  historyStats={historyStats}
-                />
+                    selectedStatsInterval={selectedStatsInterval}
+                    historyStats={historyStats}
+                  />
                 : <HistoryGraphicalStats
                   historyStats={historyStats}
                 />

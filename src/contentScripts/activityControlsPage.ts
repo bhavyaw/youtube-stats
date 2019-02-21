@@ -18,13 +18,14 @@ function extensionMessageListener() {
 async function handleMessageFromBackgroundScript(messages: IExtensionEventMessage[], sender: any) {
   console.log("inside handle messages from the backgroud script : ", messages, sender);
   if (!sender.tab) {
-    console.log("Message received from background script : ", ...messages);
+    console.log("Message received from background script : ", ...messages, sender);
 
     messages.forEach(message => {
       const messageType = message.type;
       switch (messageType) {
 
         case APP_CONSTANTS.PROCESSES.RUN_PRE_REFRESH_CHECKS:
+          console.log(`Run prerefreshcheck message received from the background - opening myactivity page`);
           runPreRefreshCycleChecks();
           break;
       }
@@ -90,6 +91,7 @@ function listenToHistorySettingChanges(): void {
 function initiateRefreshCycle() {
   // Hide any alert messages 
   console.log("### -> Initiating refresh cycle");
+  alert('Opening myactivity page to extract youtube history');
   location.href = "https://myactivity.google.com/item?restrict=ytw&hl=en-GB";
 }
 

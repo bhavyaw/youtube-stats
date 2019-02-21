@@ -44,6 +44,16 @@ module.exports = {
         use: "ts-loader"
       },
       {
+        test: /\.css$/,
+        use: [{
+            loader: "style-loader" // Creates style nodes from JS strings
+          },
+          {
+            loader: "css-loader" // Translates CSS into CommonJS
+          }
+        ]
+      },
+      {
         exclude: /node_modules/,
         test: /\.scss$/,
         use: [{

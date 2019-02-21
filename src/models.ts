@@ -80,7 +80,7 @@ export interface IYoutubeDayStats {
     lastWatchedVideo: IYoutubeVideo,
     totalActiveDays: number
     displayDate: string,
-    watchedOnDate?: string,
+    watchedOnDate?: string | Array<string>,
     videos?: IYoutubeVideo[] | null
 }
 

@@ -35,6 +35,7 @@
     "object-validate": "^1.0.0",
     "qs": "^6.6.0",
     "react": "^16.8.1",
+    "react-datepicker": "^2.1.0",
     "react-dom": "^16.8.1",
     "receptor": "^2.2.1",
     "webpack-glob-entries": "^1.0.1"

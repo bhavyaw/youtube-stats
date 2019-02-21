@@ -45,7 +45,7 @@ function insertInitialDataLoadingScript(initialDataScript: HTMLScriptElement) {
 
 function variableAccessSriptMessageHandler(message) {
   const type = message.type;
-  console.log("Message received from variable access script : ", message);
+  // console.log("Message received from variable access script : ", message);
 
   if (type === APP_CONSTANTS.DATA_EXCHANGE_TYPE.INITIAL_YOUTUBE_HISTORY_DATA) {
     saveInitialHistoryData(message);

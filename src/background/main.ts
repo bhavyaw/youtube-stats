@@ -7,7 +7,6 @@ import { appConfig, StatsIntervalOptions } from 'config';
 import isNil = require("lodash/isNil");
 import isEmpty = require('lodash/isEmpty');
 import isDate = require("lodash/isDate");
-import appStrings from 'appStrings';
 import { isNumber } from 'lodash';
 import YoutubeHistoryStats from './services/YoutubeHistoryStats';
 
@@ -155,10 +154,18 @@ async function handleMessagesFromPopupScript(message: IExtensionEventMessage, se
       break;
 
     case APP_CONSTANTS.DATA_EXCHANGE_TYPE.FETCH_STATS_FOR_INTERVAL:
-      const { statsInterval, date, loadCount, userId }: { statsInterval: StatsIntervalOptions, date, loadCount: number, userId: string } = data;
-      console.log(`Generating stats for interval :`, statsInterval, date);
-      const historyStats: any = await YoutubeHistoryStats.getStatsForInterval(statsInterval, date, userId, loadCount);
-      sendResponseFunc(historyStats);
+      const { selectedStatsInterval, selectedDate, loadCount, userId }: { selectedStatsInterval: StatsIntervalOptions, selectedDate, loadCount: number, userId: string } = data;
+      console.log(`Generating stats for interval :`, selectedStatsInterval, selectedDate);
+      try {
+        const historyStats: any = await YoutubeHistoryStats.getStatsForInterval(selectedStatsInterval, selectedDate, userId, loadCount);
+        const lastSavedStatsInterval : number = await store.get(`lastAccessedStatsInterval`);
+        if (!lastSavedStatsInterval || (lastSavedStatsInterval && lastSavedStatsInterval !== selectedStatsInterval)) {
+          await store.set(`lastAccessedStatsInterval`, selectedStatsInterval);
+        }
+        sendResponseFunc(historyStats);
+      } catch (error) {
+        throw error;
+      }
   }
 }
 
@@ -189,12 +196,12 @@ async function runRefreshCycle() {
    */
 
   if (activityControlsTabId) {
-    chrome.notifications.create({
-      message: appStrings.alreadyRefreshing,
-      type: `basic`,
-      title: `Notice`,
-      iconUrl: `../icon48.png`
-    });
+    // chrome.notifications.create({
+    //   message: appStrings.alreadyRefreshing,
+    //   type: `basic`,
+    //   title: `Notice`,
+    //   iconUrl: `../icon48.png`
+    // });
     return;
   }
   if (runRefreshCycle) {

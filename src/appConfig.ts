@@ -1,3 +1,5 @@
+import appStrings from "appStrings";
+
 export enum RefreshIntervals {
   Daily = 1,
   Weekly = 7,
@@ -17,6 +19,13 @@ export enum StatsDisplayTypes {
   Graph = 1
 };
 
+export const statDisplayFields = {
+  [StatsIntervalOptions.Daily] : ["formattedDate", "totalCount", "totalWatchedDuration"],
+  [StatsIntervalOptions.Weekly] : ["formattedDate", "totalCount", "totalWatchedDuration", "dailyAverage", "totalActiveDays"],
+  [StatsIntervalOptions.Monthly] : ["formattedDate", "totalCount", "totalWatchedDuration", "dailyAverage", "totalActiveDays"],
+  [StatsIntervalOptions.Yearly] : ["formattedDate", "totalCount", "totalWatchedDuration", "dailyAverage", "totalActiveDays"]
+}
+
 export const appConfig = {
   defaultRefreshInterval: RefreshIntervals.Daily,
   defaultStatsInterval: StatsIntervalOptions.Daily,
@@ -24,4 +33,5 @@ export const appConfig = {
   defaultStatsLoadCount: 10 // no. of days, weeks or Months data to load 
 };
 
+Object.freeze(statDisplayFields);
 Object.freeze(appConfig);
