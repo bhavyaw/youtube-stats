@@ -4,6 +4,7 @@ $background-color: #BADA55;
 // Chrome applies an 8px margin by default (gross).
 body {
     margin: 0px;
+    min-width: 500px;
 }
 
 .popupContainer {

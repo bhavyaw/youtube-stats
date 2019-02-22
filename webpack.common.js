@@ -15,7 +15,7 @@ const mainEntries = pick(originalEntriesHash, [
 ]);
 
 mainEntries["background"] = `C:/Users/bhavy/Desktop/OSS-Projects/boilerplates/chrome-extension-react-typescript-boilerplate/src/background/main.ts`;
-mainEntries["popup"] = `C:/Users/bhavy/Desktop/OSS-Projects/boilerplates/chrome-extension-react-typescript-boilerplate/src/popup.tsx`
+mainEntries["popup"] = `C:/Users/bhavy/Desktop/OSS-Projects/boilerplates/chrome-extension-react-typescript-boilerplate/src/popup/popup.tsx`
 
 let commonEntries = pick(originalEntriesHash, [
   'appConfig',

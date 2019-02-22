@@ -1,5 +1,4 @@
 import * as React from 'react';
-import './Popup.scss';
 import UserDetails from './userDetails';
 
 interface AppProps {

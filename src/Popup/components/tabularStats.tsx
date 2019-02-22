@@ -3,6 +3,7 @@ import { IHistoryStats, IYoutubeDayStats } from 'models';
 import appStrings from 'appStrings';
 import isEmpty = require('lodash/isEmpty');
 import { statDisplayFields } from 'config';
+import isArray = require('lodash/isArray');
 
 export interface Props {
   historyStats: IHistoryStats[],
@@ -18,6 +19,14 @@ class HistoryTabularStats extends React.Component<Props, State> {
     super(props);
     this.state = {};
   }
+
+  handleLoadMoreClick = (historyStats : IYoutubeDayStats[]) => {
+    const lastLoadedHistoryStat : IYoutubeDayStats = historyStats.pop();
+    let lastLoadedHistoryStatDate = lastLoadedHistoryStat.watchedOnDate;
+    lastLoadedHistoryStatDate = isArray(lastLoadedHistoryStatDate) ? lastLoadedHistoryStatDate[1] : lastLoadedHistoryStatDate;
+    console.log(`Clicked on handle load more click...last loaded date was : `,lastLoadedHistoryStat, lastLoadedHistoryStatDate);
+  }
+
   render() {
     const {historyStats, selectedStatsInterval} = this.props;
     const selectedIntervalHistoryStats : any = historyStats[selectedStatsInterval] || {};
@@ -30,7 +39,9 @@ class HistoryTabularStats extends React.Component<Props, State> {
         {
           isEmpty(selectedIntervalHistoryStats) && selectedStatsInterval
           ? null
-          : <table>
+          : 
+          <div>
+            <table>
               <thead>
                 {
                   <tr>
@@ -65,6 +76,8 @@ class HistoryTabularStats extends React.Component<Props, State> {
                 }
               </tbody>
             </table>
+            <button>onClick={this.handleLoadMoreClick.bind(this, selectedIntervalHistoryStats)}</button>
+          </div>
         }
       </section>
     );

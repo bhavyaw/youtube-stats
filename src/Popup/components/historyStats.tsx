@@ -1,6 +1,6 @@
 import * as React from 'react';
-import HistoryTabularStats from './tabularStats';
-import HistoryGraphicalStats from './graphicalStats';
+import StatsTabularView from './tabularStats';
+import StatsGraphicalView from './graphicalStats';
 import { StatsIntervalOptions, StatsDisplayTypes, appConfig } from "config";
 import { IHistoryStats } from 'models';
 import { convertEnumToArray } from 'common/utils';
@@ -106,11 +106,11 @@ class HistoryStats extends React.Component<Props, State> {
 
             {
               (selectedStatDisplayType === StatsDisplayTypes.Table)
-                ? <HistoryTabularStats
+                ? <StatsTabularView
                     selectedStatsInterval={selectedStatsInterval}
                     historyStats={historyStats}
                   />
-                : <HistoryGraphicalStats
+                : <StatsGraphicalView
                   historyStats={historyStats}
                 />
             }

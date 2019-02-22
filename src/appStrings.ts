@@ -2,11 +2,13 @@
 const appStrings: any = {
   alreadyRefreshing: `Refresh Cycle already running`,
   statsFieldDisplayNames : {
-    formattedDate : "Formatted Date",
+    formattedDate : "Date",
     totalCount : "Total Count",
-    totalWatchedDuration : "Total Watched Duration",
+    totalWatchedDuration : "Duration",
     dailyAverage : "Daily Average",
-    totalActiveDays : "Total Active Days"
+    totalActiveDays : "Active Days",
+    formattedDuration : "Duration",
+    formattedDailyAverage : "Daily Average"
   }
 };
 

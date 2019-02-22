@@ -38,3 +38,21 @@ export function formatDate(watchedOnDate: Date, dateFormat: string): string {
 
   return formattedDate;
 }
+
+export function convertDurationToProperFormat (timeInSecs : number) {
+  const days = timeInSecs / (60 * 60 * 24);
+  const absoluteDays = Math.floor(days);
+
+  const hours = (days - absoluteDays) * 24;
+  const absoluteHours = Math.floor(hours);
+
+  //Get remainder from hours and convert to minutes
+  const minutes = (hours - absoluteHours) * 60;
+  const absoluteMinutes = Math.floor(minutes);
+
+  const seconds = (minutes - absoluteMinutes) * 60;
+  const absoluteSeconds = Math.floor(seconds);
+
+  const formattedDuration : string =  `${absoluteDays ? absoluteDays+"d" : ""} ${absoluteHours ? absoluteHours+"h" : ""} ${absoluteMinutes ? absoluteMinutes+"m" : ""} ${absoluteSeconds + "s"}`;
+  return formattedDuration;
+}

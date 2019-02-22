@@ -51,7 +51,7 @@ class ContinuationDataService {
         message = {
           type : APP_CONSTANTS.DATA_EXCHANGE_TYPE.CONTINUATION_DATA,
           data : {
-            continuationDataFetchingParam : APP_CONSTANTS.CONTINUATION_DATA_END
+            continuationDataFetchingParam : newContinuationParams
           },
           userId
         };

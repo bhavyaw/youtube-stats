@@ -20,10 +20,10 @@ export enum StatsDisplayTypes {
 };
 
 export const statDisplayFields = {
-  [StatsIntervalOptions.Daily] : ["formattedDate", "totalCount", "totalWatchedDuration"],
-  [StatsIntervalOptions.Weekly] : ["formattedDate", "totalCount", "totalWatchedDuration", "dailyAverage", "totalActiveDays"],
-  [StatsIntervalOptions.Monthly] : ["formattedDate", "totalCount", "totalWatchedDuration", "dailyAverage", "totalActiveDays"],
-  [StatsIntervalOptions.Yearly] : ["formattedDate", "totalCount", "totalWatchedDuration", "dailyAverage", "totalActiveDays"]
+  [StatsIntervalOptions.Daily] : ["formattedDate", "totalCount", "formattedDuration"],
+  [StatsIntervalOptions.Weekly] : ["formattedDate", "totalCount", "formattedDuration", "formmattedDailyAverage", "totalActiveDays"],
+  [StatsIntervalOptions.Monthly] : ["formattedDate", "totalCount", "formattedDuration", "formmattedDailyAverage", "totalActiveDays"],
+  [StatsIntervalOptions.Yearly] : ["formattedDate", "totalCount", "formattedDuration", "formmattedDailyAverage", "totalActiveDays"]
 }
 
 export const appConfig = {

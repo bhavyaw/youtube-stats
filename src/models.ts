@@ -86,7 +86,6 @@ export interface IYoutubeDayStats {
 
 export interface IYoutubeWeekStats extends IYoutubeDayStats {
     dailyAverageDuration: number,
-    dateRange: [string, string]
 }
 
 export interface IYoutubeDatesStats {

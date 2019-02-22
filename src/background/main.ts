@@ -295,16 +295,14 @@ async function saveContinuationData(activeTabId: any, continuationData: INewInit
   const newContinuationDataFetchingParam: string = youtubeHistory.continuationDataFetchingParam;
 
   try {
-    if (!isEmpty(newlyWatchedVideos)) {
-      await youtubeHistory.updateContinuationData();
-    }
-
     await youtubeHistory.updateContinuationDataFetchingParam();
 
-    if (newContinuationDataFetchingParam && newContinuationDataFetchingParam !== APP_CONSTANTS.CONTINUATION_DATA_END) {
-      if (!stopFetchingContinuationData) {
-        console.log(` saveContinuationData() : Fetching continuation data from inside of Save Continuation data...`, "\n\n");
-        fetchContinuationData(activeTabId, userId, newContinuationDataFetchingParam);
+    if (!isEmpty(newlyWatchedVideos)) {
+      await youtubeHistory.updateContinuationData();
+
+      if (newContinuationDataFetchingParam && newContinuationDataFetchingParam !== APP_CONSTANTS.CONTINUATION_DATA_END && !stopFetchingContinuationData) {
+          console.log(` saveContinuationData() : Fetching continuation data from inside of Save Continuation data...`, "\n\n");
+          fetchContinuationData(activeTabId, userId, newContinuationDataFetchingParam);
       }
     }
   } catch (e) {

@@ -2,7 +2,7 @@ import { APP_CONSTANTS } from './../../appConstants';
 import { isEmpty, keys, union, intersection } from 'lodash';
 import { IHistoryStats, IYoutubeDatesStats, IYoutubeVideo, IYoutubeHistory, IYoutubeDayStats } from 'models';
 import { storeAsync as store } from 'chrome-utils';
-import { formatDate } from './utils';
+import { formatDate, convertDurationToProperFormat } from './utils';
 import isString = require('lodash/isString');
 import { StatsIntervalOptions, statDisplayFields } from 'config';
 import isUndefined = require('lodash/isUndefined');
@@ -139,7 +139,7 @@ export default class YoutubeHistoryStats implements IHistoryStats {
     return weekStats;
   }
 
-  public static async getStatForDates(statsInterval: StatsIntervalOptions, fromDate: Date, endDate: Date, userId) {
+  public static async getStatForDates(statsInterval: StatsIntervalOptions, fromDate: Date, endDate: Date, userId, formattedDate) {
     fromDate = isString(fromDate) ? new Date(fromDate) : fromDate;
     let tempEndDate = new Date(endDate);
 
@@ -179,21 +179,23 @@ export default class YoutubeHistoryStats implements IHistoryStats {
       }
     } while (!fromDateEqualToEndDate)
 
-    dailyAverage = Math.round((totalWatchedDuration / daysDiff) * 100) / 100;
-
     if (totalCount > 0) {
+      dailyAverage = Math.round((totalWatchedDuration / daysDiff) * 100) / 100;
+      const formmattedDailyAverage : string = convertDurationToProperFormat(dailyAverage);
+      const formattedDuration : string = convertDurationToProperFormat(totalWatchedDuration);
       let stats: any = {
         lastWatchedVideo,
         totalCount,
-        totalWatchedDuration
+        formattedDuration,
+        formmattedDailyAverage,
+        formattedDate
       };
   
       if ( statsInterval === StatsIntervalOptions.Daily ) {
         stats.watchedOnDate = fromDate.toISOString();
-        stats.formattedDate = formatDate(fromDate, "DDD, dd mmm'yy");
       } else {
         stats.watchedOnDate = [fromDate.toISOString(), endDate.toISOString()];
-        stats.formattedDate = `${formatDate(fromDate, "DDD, dd mmm'yy")} - ${formatDate(endDate, "DDD, dd mmm'yy")}`;
+        stats.formattedDate = `${formatDate(fromDate, "dd mmm'yy")} - ${formatDate(endDate, "DDD, dd mmm'yy")}`;
         stats.dailyAverage = dailyAverage;
         stats.totalActiveDays = totalActiveDays;
       }
@@ -242,7 +244,13 @@ export default class YoutubeHistoryStats implements IHistoryStats {
         const decrementer: number = 1;
         for (let i=0; i<loadCount; i++) {
           const fromDate = new Date(startingDate.getTime() - APP_CONSTANTS.DAY_IN_MS * i * decrementer);
-          statsPromises.push(YoutubeHistoryStats.getStatForDates(statsInterval, fromDate, fromDate, userId));
+          const formattedDate = fromDate.toLocaleDateString("en-us", {
+            weekday : "narrow",
+            day : "numeric",
+            month : "numeric",
+            year : "2-digit"
+          });
+          statsPromises.push(YoutubeHistoryStats.getStatForDates(statsInterval, fromDate, fromDate, userId, formattedDate));
         }
         break;
       }
@@ -254,7 +262,13 @@ export default class YoutubeHistoryStats implements IHistoryStats {
         for (let i=0; i<loadCount; i++) {
           const fromDate = new Date(startingDate.getFullYear(), startingDate.getMonth(), (startingDate.getDate() - (StatsIntervalOptions.Weekly * i)));
           const endDate = new Date(fromDate.getFullYear(), fromDate.getMonth(), (fromDate.getDate() + (StatsIntervalOptions.Weekly - 1)));
-          const dayStats: Promise<IYoutubeDayStats> = YoutubeHistoryStats.getStatForDates(statsInterval, fromDate, endDate, userId);
+          const dateOpts : any = {
+            day : "numeric",
+            month : "numeric",
+            year : "2-digit"
+          };
+          const formattedDate : string = `${fromDate.toLocaleDateString("en-us", dateOpts)} - ${endDate.toLocaleDateString("en-us", dateOpts)}`;
+          const dayStats: Promise<IYoutubeDayStats> = YoutubeHistoryStats.getStatForDates(statsInterval, fromDate, endDate, userId, formattedDate);
           statsPromises.push(dayStats);
         }
         break;
@@ -265,7 +279,12 @@ export default class YoutubeHistoryStats implements IHistoryStats {
         for (let i=0; i<loadCount; i++) {
           const fromDate = new Date(startingDate.getFullYear(), (startingDate.getMonth() - i), 1);
           const endDate = new Date(fromDate.getFullYear(), (fromDate.getMonth() + 1), 0);
-          const dayStats: Promise<IYoutubeDayStats> = YoutubeHistoryStats.getStatForDates(statsInterval, fromDate, endDate, userId);
+          const dateOpts : any = {
+            month : "numeric",
+            year : "2-digit"
+          };
+          const formattedDate : string = `${fromDate.toLocaleDateString("en-us", dateOpts)} - ${endDate.toLocaleDateString("en-us", dateOpts)}`;
+          const dayStats: Promise<IYoutubeDayStats> = YoutubeHistoryStats.getStatForDates(statsInterval, fromDate, endDate, userId, formattedDate);
           statsPromises.push(dayStats);
         }
         break;
@@ -278,7 +297,11 @@ export default class YoutubeHistoryStats implements IHistoryStats {
         for (let i=0; i<loadCount; i++) {
           const fromDate = new Date((startingDate.getFullYear() - i), 0, 1);
           const endDate = new Date((fromDate.getFullYear() + 1), 0, 0);
-          const dayStats: Promise<IYoutubeDayStats> = YoutubeHistoryStats.getStatForDates(statsInterval, fromDate, endDate, userId);
+          const dateOpts : any = {
+            year : "2-digit"
+          };
+          const formattedDate : string = `${fromDate.toLocaleDateString("en-us", dateOpts)} - ${endDate.toLocaleDateString("en-us", dateOpts)}`;
+          const dayStats: Promise<IYoutubeDayStats> = YoutubeHistoryStats.getStatForDates(statsInterval, fromDate, endDate, userId, formattedDate);
           statsPromises.push(dayStats);
         }
         break;

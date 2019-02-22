@@ -2,7 +2,9 @@ import { IExtensionEventMessage } from "models";
 import { APP_CONSTANTS } from 'appConstants';
 import * as React from 'react';
 import * as ReactDOM from 'react-dom';
-import PopupContainer from "./components/popup/popupContainer";
+import PopupContainer from "./components/popupContainer";
+
+import "./Popup.scss";
 
 startPopUpScript();
 
