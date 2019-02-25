@@ -53,6 +53,6 @@ export function convertDurationToProperFormat (timeInSecs : number) {
   const seconds = (minutes - absoluteMinutes) * 60;
   const absoluteSeconds = Math.floor(seconds);
 
-  const formattedDuration : string =  `${absoluteDays ? absoluteDays+"d" : ""} ${absoluteHours ? absoluteHours+"h" : ""} ${absoluteMinutes ? absoluteMinutes+"m" : ""} ${absoluteSeconds + "s"}`;
+  const formattedDuration : string =  `${absoluteDays ? absoluteDays+"d " : ""}${absoluteHours ? absoluteHours+"h " : ""}${absoluteMinutes ? absoluteMinutes+"m " : ""}${absoluteSeconds + "s"}`;
   return formattedDuration;
 }

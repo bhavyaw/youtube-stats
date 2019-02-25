@@ -195,7 +195,6 @@ export default class YoutubeHistoryStats implements IHistoryStats {
         stats.watchedOnDate = fromDate.toISOString();
       } else {
         stats.watchedOnDate = [fromDate.toISOString(), endDate.toISOString()];
-        stats.formattedDate = `${formatDate(fromDate, "dd mmm'yy")} - ${formatDate(endDate, "DDD, dd mmm'yy")}`;
         stats.dailyAverage = dailyAverage;
         stats.totalActiveDays = totalActiveDays;
       }

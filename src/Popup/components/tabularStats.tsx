@@ -21,10 +21,10 @@ class HistoryTabularStats extends React.Component<Props, State> {
   }
 
   handleLoadMoreClick = (historyStats : IYoutubeDayStats[]) => {
-    const lastLoadedHistoryStat : IYoutubeDayStats = historyStats.pop();
+    const lastLoadedHistoryStat : IYoutubeDayStats = historyStats.shift();
     let lastLoadedHistoryStatDate = lastLoadedHistoryStat.watchedOnDate;
-    lastLoadedHistoryStatDate = isArray(lastLoadedHistoryStatDate) ? lastLoadedHistoryStatDate[1] : lastLoadedHistoryStatDate;
-    console.log(`Clicked on handle load more click...last loaded date was : `,lastLoadedHistoryStat, lastLoadedHistoryStatDate);
+    lastLoadedHistoryStatDate = isArray(lastLoadedHistoryStatDate) ? lastLoadedHistoryStatDate[0] : lastLoadedHistoryStatDate;
+    console.log(`Clicked on handle load more click...last loaded date was : `,historyStats, lastLoadedHistoryStat, lastLoadedHistoryStatDate);
   }
 
   render() {
@@ -76,7 +76,7 @@ class HistoryTabularStats extends React.Component<Props, State> {
                 }
               </tbody>
             </table>
-            <button>onClick={this.handleLoadMoreClick.bind(this, selectedIntervalHistoryStats)}</button>
+            <button onClick={this.handleLoadMoreClick.bind(this, selectedIntervalHistoryStats)}>Load More</button>
           </div>
         }
       </section>
