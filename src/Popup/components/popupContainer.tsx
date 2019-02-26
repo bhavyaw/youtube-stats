@@ -2,9 +2,9 @@ import * as React from 'react';
 import PopUpHeader from './PopupRefresh';
 import { storeAsync as store } from 'chrome-utils';
 import { convertUserIdToOriginalForm, sendMessageToBackgroundScript } from 'common/utils';
-import { IHistoryStats, IExtensionEventMessage, IYoutubeDayStats, IYoutubeWeekStats } from 'models';
+import { IExtensionEventMessage } from 'models';
 import { APP_CONSTANTS } from 'appConstants';
-import { appConfig, StatsIntervalOptions } from "config";
+import { appConfig } from "config";
 import RefreshInterval from './refreshIntervals';
 import HistoryStats from './historyStats';
 import isEmpty = require('lodash/isEmpty');
@@ -20,9 +20,7 @@ export interface State {
   lastRunDate?: string,
   selectedUser: string,
   activeRefreshInterval: number,
-  historyStats?: any,
-  selectedStatsInterval ?: number,
-  selectedDate: Date 
+  historyStats?: any
 }
 
 class PopupContainer extends React.Component<Props, State> {
@@ -34,13 +32,6 @@ class PopupContainer extends React.Component<Props, State> {
       noUsers: true,
       selectedUser: "",
       activeRefreshInterval: appConfig.defaultRefreshInterval,
-      historyStats : {
-        [StatsIntervalOptions.Daily] : null,
-        [StatsIntervalOptions.Weekly] : null,
-        [StatsIntervalOptions.Monthly] : null,
-        [StatsIntervalOptions.Yearly] : null
-      },
-      selectedDate: new Date()
     };
   }
 
@@ -65,11 +56,10 @@ class PopupContainer extends React.Component<Props, State> {
               if (selectedUser === userId) {
                 console.log(`history has been updated for the currently shown user...update the corresponding component...`);
                 this.getHistoryDataForUser(selectedUser).then(historyData => {
-                  const { historyStats, lastRunDate } = historyData;
-                  console.log("inside refreshHistoryStats : ", historyStats, lastRunDate, selectedUser);
+                  const { lastRunDate } = historyData;
+                  console.log("inside refreshHistoryStats : ", lastRunDate, selectedUser);
                   this.setState({
                     ...this.state,
-                    // historyStats,
                     lastRunDate,
                     selectedUser: selectedUser
                   });
@@ -92,9 +82,7 @@ class PopupContainer extends React.Component<Props, State> {
       const { lastRunDate } = await this.getHistoryDataForUser(lastActiveUserId);
       let users: Array<any> = await store.get(`users`);
       let activeRefreshInterval: number = await store.get(`activeRefreshInterval`) || appConfig.defaultRefreshInterval;
-      let selectedStatsInterval : number = await store.get(`lastAccessedStatsInterval`);
-      selectedStatsInterval = selectedStatsInterval || appConfig.defaultStatsInterval;
-      console.log(`fetchInitialDataForLastActiveUser : `, users, lastRunDate, selectedStatsInterval);
+      console.log(`fetchInitialDataForLastActiveUser : `, users, lastRunDate);
 
       users = users.map(userId => {
         return {
@@ -106,11 +94,9 @@ class PopupContainer extends React.Component<Props, State> {
       this.setState({
         noUsers: false,
         selectedUser: lastActiveUserId,
-        // historyStats,
         users,
         lastRunDate,
-        activeRefreshInterval,
-        selectedStatsInterval
+        activeRefreshInterval
       });
     } else {
       console.log(`No active users found...`);
@@ -162,12 +148,10 @@ class PopupContainer extends React.Component<Props, State> {
   }
 
   async getHistoryDataForUser(userId): Promise<any> {
-    // const historyStats: IHistoryStats = await store.get(`historyStats.${userId}`);
     const lastRunTime: string = await store.get(`lastRun.${userId}`);
     const lastRunDate: string = this.getFormattedLastRunTime(lastRunTime);
 
     return {
-      // historyStats,
       lastRunDate
     };
   }
@@ -179,33 +163,8 @@ class PopupContainer extends React.Component<Props, State> {
     });
   }
 
-  async fetchStats(userId, selectedDate = this.state.selectedDate, selectedStatsInterval = this.state.selectedStatsInterval) {
-    console.log(`Sending message to abckground script to fetch history stats : `, selectedStatsInterval, selectedDate, userId);
-    sendMessageToBackgroundScript({
-      type: APP_CONSTANTS.DATA_EXCHANGE_TYPE.FETCH_STATS_FOR_INTERVAL,
-      data: {
-        selectedStatsInterval,
-        selectedDate,
-        userId,
-        loadCount: appConfig.defaultStatsLoadCount
-      }
-    }, (response) => {
-      console.log(`Post stat interval updated!!!`, response);
-      if (!isEmpty(response)) {
-        this.setState(prevState => ({
-          historyStats : {
-            ...prevState.historyStats,
-            [selectedStatsInterval] : response
-          },
-          selectedStatsInterval,
-          selectedDate
-        }));
-      }
-    }, APP_CONSTANTS.SENDER.POPUP);
-  }
-
   render() {
-    const { noUsers, selectedUser, users, lastRunDate = "", activeRefreshInterval, historyStats, selectedStatsInterval, selectedDate } = this.state;
+    const { noUsers, selectedUser, users, lastRunDate = "", activeRefreshInterval, historyStats } = this.state;
 
     console.log(`Popupcontainer render function : `, historyStats);
     return (
@@ -229,11 +188,8 @@ class PopupContainer extends React.Component<Props, State> {
                   onRefreshIntervalChange={this.updateRefreshInterval}
                 />
                 <br />
-                <HistoryStats
-                  fetchStats={this.fetchStats.bind(this, selectedUser)}
-                  historyStats={historyStats}
-                  selectedStatsInterval={selectedStatsInterval}
-                  selectedDate={selectedDate}
+                <HistoryStats 
+                  selectedUserId={selectedUser}
                 />
               </section>
             )

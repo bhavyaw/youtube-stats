@@ -141,14 +141,14 @@ export default class YoutubeHistoryStats implements IHistoryStats {
 
   public static async getStatForDates(statsInterval: StatsIntervalOptions, fromDate: Date, endDate: Date, userId, formattedDate) {
     fromDate = isString(fromDate) ? new Date(fromDate) : fromDate;
-    let tempEndDate = new Date(endDate);
+    let tempFromDate = new Date(fromDate);
 
     const videoHistory: IYoutubeHistory = await store.get(`videoHistory.${userId}`);
     let lastWatchedVideo: any;
-    let totalCount = 0, totalWatchedDuration = 0, dailyAverage = 0, daysDiff = 0, totalActiveDays = 0, fromDateEqualToEndDate = true;
+    let totalCount = 0, totalWatchedDuration = 0, dailyAverage = 0, daysDiff = 0, totalActiveDays = 0, fromDateGreaterThanEndDate = false;
 
-    do {
-      let dayStats: any = YoutubeHistoryStats.getStatForDay(videoHistory, tempEndDate, totalActiveDays);
+    while (!fromDateGreaterThanEndDate) {
+      let dayStats: any = YoutubeHistoryStats.getStatForDay(videoHistory, tempFromDate, totalActiveDays);
       let { dayTotalCount, dayTotalDuration, lastWatchedVideoOfDay } = dayStats;
       ({ totalActiveDays } = dayStats);
 
@@ -164,20 +164,15 @@ export default class YoutubeHistoryStats implements IHistoryStats {
       // };
       // datesStats.dayStats.push(dayStats);
       
-      // In Daily stats interval we don't iterate and need to keep tempEndDate equal to the from date
-      if (statsInterval !== StatsIntervalOptions.Daily) {
-        tempEndDate = new Date(tempEndDate.getTime() - APP_CONSTANTS.DAY_IN_MS);
-      }
-
-      fromDateEqualToEndDate = (tempEndDate.getFullYear() === fromDate.getFullYear()
-        && tempEndDate.getMonth() === fromDate.getMonth()
-        && tempEndDate.getDate() === fromDate.getDate());
+      // In Daily stats interval we don't iterate and need to keep tempFromDate equal to the from date
+      tempFromDate = new Date(tempFromDate.getTime() + APP_CONSTANTS.DAY_IN_MS);
+      fromDateGreaterThanEndDate = tempFromDate.getTime() > endDate.getTime();
 
       // last cycle
-      if (fromDateEqualToEndDate) {
+      if (fromDateGreaterThanEndDate) {
         lastWatchedVideo = lastWatchedVideoOfDay;
       }
-    } while (!fromDateEqualToEndDate)
+    } 
 
     if (totalCount > 0) {
       dailyAverage = Math.round((totalWatchedDuration / daysDiff) * 100) / 100;
@@ -234,17 +229,15 @@ export default class YoutubeHistoryStats implements IHistoryStats {
   public static async getStatsForInterval(statsInterval: StatsIntervalOptions, date: Date, userId: string, loadCount: number) {
     console.log(`getStatsForInterval() : generating stats for interval`, statsInterval, date);
     const statsPromises: Array<Promise<IYoutubeDayStats>> = [];
-    const actualStats : Array<IYoutubeDayStats> = []
     date = new Date(date);
 
     switch (statsInterval) {
       case StatsIntervalOptions.Daily: {
         const startingDate: Date = date;
-        const decrementer: number = 1;
         for (let i=0; i<loadCount; i++) {
-          const fromDate = new Date(startingDate.getTime() - APP_CONSTANTS.DAY_IN_MS * i * decrementer);
+          const fromDate = new Date(startingDate.getTime() - APP_CONSTANTS.DAY_IN_MS * i);
           const formattedDate = fromDate.toLocaleDateString("en-us", {
-            weekday : "narrow",
+            weekday : "short",
             day : "numeric",
             month : "numeric",
             year : "2-digit"
@@ -257,11 +250,14 @@ export default class YoutubeHistoryStats implements IHistoryStats {
 
       case StatsIntervalOptions.Weekly: {
         const dayIndex: number = date.getDay();
-        const startingDate: Date = new Date(date.getTime() - APP_CONSTANTS.DAY_IN_MS * (dayIndex - 1)); // starting from monday
+        const startingDate: Date = new Date(date.getTime() - APP_CONSTANTS.DAY_IN_MS * (dayIndex ? (dayIndex - 1) : 6)   ); // starting from monday
+        console.log(`Inside get stats for Interval : ${statsInterval}. Start of the week is :`, startingDate);
+
         for (let i=0; i<loadCount; i++) {
           const fromDate = new Date(startingDate.getFullYear(), startingDate.getMonth(), (startingDate.getDate() - (StatsIntervalOptions.Weekly * i)));
           const endDate = new Date(fromDate.getFullYear(), fromDate.getMonth(), (fromDate.getDate() + (StatsIntervalOptions.Weekly - 1)));
           const dateOpts : any = {
+            weekday : "short",
             day : "numeric",
             month : "numeric",
             year : "2-digit"
@@ -279,10 +275,10 @@ export default class YoutubeHistoryStats implements IHistoryStats {
           const fromDate = new Date(startingDate.getFullYear(), (startingDate.getMonth() - i), 1);
           const endDate = new Date(fromDate.getFullYear(), (fromDate.getMonth() + 1), 0);
           const dateOpts : any = {
-            month : "numeric",
+            month : "short",
             year : "2-digit"
           };
-          const formattedDate : string = `${fromDate.toLocaleDateString("en-us", dateOpts)} - ${endDate.toLocaleDateString("en-us", dateOpts)}`;
+          const formattedDate : string = `${fromDate.toLocaleDateString("en-us", dateOpts)}`;
           const dayStats: Promise<IYoutubeDayStats> = YoutubeHistoryStats.getStatForDates(statsInterval, fromDate, endDate, userId, formattedDate);
           statsPromises.push(dayStats);
         }
@@ -297,9 +293,9 @@ export default class YoutubeHistoryStats implements IHistoryStats {
           const fromDate = new Date((startingDate.getFullYear() - i), 0, 1);
           const endDate = new Date((fromDate.getFullYear() + 1), 0, 0);
           const dateOpts : any = {
-            year : "2-digit"
+            year : "numeric"
           };
-          const formattedDate : string = `${fromDate.toLocaleDateString("en-us", dateOpts)} - ${endDate.toLocaleDateString("en-us", dateOpts)}`;
+          const formattedDate : string = `${fromDate.toLocaleDateString("en-us", dateOpts)}`;
           const dayStats: Promise<IYoutubeDayStats> = YoutubeHistoryStats.getStatForDates(statsInterval, fromDate, endDate, userId, formattedDate);
           statsPromises.push(dayStats);
         }

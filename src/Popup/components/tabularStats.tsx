@@ -2,12 +2,14 @@ import * as React from 'react';
 import { IHistoryStats, IYoutubeDayStats } from 'models';
 import appStrings from 'appStrings';
 import isEmpty = require('lodash/isEmpty');
-import { statDisplayFields } from 'config';
+import { statDisplayFields, StatsIntervalOptions } from 'config';
 import isArray = require('lodash/isArray');
+import { APP_CONSTANTS } from 'appConstants';
 
 export interface Props {
   historyStats: IHistoryStats[],
-  selectedStatsInterval : number
+  selectedStatsInterval : number,
+  fetchStats(lastLoadedHistoryStatDate ?: Date, selectedUserId ?: string, selectedStatsInterval ?: StatsIntervalOptions, loadMoreCase ?: Boolean)
 }
 
 export interface State {
@@ -21,10 +23,21 @@ class HistoryTabularStats extends React.Component<Props, State> {
   }
 
   handleLoadMoreClick = (historyStats : IYoutubeDayStats[]) => {
-    const lastLoadedHistoryStat : IYoutubeDayStats = historyStats.shift();
-    let lastLoadedHistoryStatDate = lastLoadedHistoryStat.watchedOnDate;
-    lastLoadedHistoryStatDate = isArray(lastLoadedHistoryStatDate) ? lastLoadedHistoryStatDate[0] : lastLoadedHistoryStatDate;
+    const lastLoadedHistoryStat : IYoutubeDayStats = historyStats[historyStats.length - 1]
+    let lastLoadedHistoryStatDateRange : string | string[] = lastLoadedHistoryStat.watchedOnDate;
+    let lastLoadedHistoryDateString : string, lastLoadedHistoryStatDate : Date;
+
+    if (isArray(lastLoadedHistoryStatDateRange)) {
+      lastLoadedHistoryDateString = lastLoadedHistoryStatDateRange[0];
+
+    } else {
+      lastLoadedHistoryDateString = lastLoadedHistoryStatDateRange;
+    }
+
+    lastLoadedHistoryStatDate  = new Date(lastLoadedHistoryDateString);
+    lastLoadedHistoryStatDate = new Date(lastLoadedHistoryStatDate.getTime() - APP_CONSTANTS.DAY_IN_MS); // need previous week, month and so on
     console.log(`Clicked on handle load more click...last loaded date was : `,historyStats, lastLoadedHistoryStat, lastLoadedHistoryStatDate);
+    this.props.fetchStats(lastLoadedHistoryStatDate, undefined, undefined, true);
   }
 
   render() {
