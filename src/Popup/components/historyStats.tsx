@@ -10,6 +10,7 @@ import { IYoutubeDayStats } from "models";
 import "react-datepicker/dist/react-datepicker.css";
 import { APP_CONSTANTS } from 'appConstants';
 import isEmpty = require('lodash/isEmpty');
+import isArray = require('lodash/isArray');
  
 
 export interface Props {
@@ -48,9 +49,14 @@ class HistoryStats extends React.Component<Props, State> {
     this.fetchInitialStatsData();
   }
 
-  //WARNING! To be deprecated in React v17. Use new lifecycle static getDerivedStateFromProps instead.
-  componentWillReceiveProps(nextProps: Props) {
-    
+  componentDidUpdate(prevProps: Props, prevState: State) {
+    const {selectedUserId : previousSelectedUser} = prevProps;
+    const {selectedUserId : newSelectedUser} = this.props;
+
+    if (newSelectedUser !== previousSelectedUser && newSelectedUser !== "") {
+      console.log(`Selected user changed : `, newSelectedUser, previousSelectedUser);
+      this.fetchStats(undefined, newSelectedUser);
+    }
   }
 
   handleStatIntervalChange = (e) => {
@@ -87,15 +93,15 @@ class HistoryStats extends React.Component<Props, State> {
 
   fetchStats = async(
     selectedDate = this.state.selectedDate, 
-    userId = this.props.selectedUserId, 
+    selectedUserId = this.props.selectedUserId, 
     selectedStatsInterval = this.state.selectedStatsInterval,
     loadMoreCase = false
   ) => {
-    console.log(`Sending message to abckground script to fetch history stats : `, selectedDate, userId);
+    console.log(`Sending message to abckground script to fetch history stats : `, selectedDate, selectedUserId);
     const requestData = {
       selectedStatsInterval, 
       selectedDate,
-      userId
+      selectedUserId
     };
 
     const response : IYoutubeDayStats[] = await this.fetchStatsDataFromBackground(requestData);
@@ -109,7 +115,8 @@ class HistoryStats extends React.Component<Props, State> {
       if (!loadMoreCase) {
         newState = {
           selectedStatsInterval,
-          selectedDate
+          selectedDate,
+          selectedUserId
         };
       }
 
@@ -121,6 +128,24 @@ class HistoryStats extends React.Component<Props, State> {
           }
       }));
     }
+  }
+
+  handleLoadMoreClick = (historyStats : IYoutubeDayStats[]) => {
+    const lastLoadedHistoryStat : IYoutubeDayStats = historyStats[historyStats.length - 1]
+    let lastLoadedHistoryStatDateRange : string | string[] = lastLoadedHistoryStat.watchedOnDate;
+    let lastLoadedHistoryDateString : string, lastLoadedHistoryStatDate : Date;
+
+    if (isArray(lastLoadedHistoryStatDateRange)) {
+      lastLoadedHistoryDateString = lastLoadedHistoryStatDateRange[0];
+
+    } else {
+      lastLoadedHistoryDateString = lastLoadedHistoryStatDateRange;
+    }
+
+    lastLoadedHistoryStatDate  = new Date(lastLoadedHistoryDateString);
+    lastLoadedHistoryStatDate = new Date(lastLoadedHistoryStatDate.getTime() - APP_CONSTANTS.DAY_IN_MS); // need previous week, month and so on
+    console.log(`Clicked on handle load more click...last loaded date was : `,historyStats, lastLoadedHistoryStat, lastLoadedHistoryStatDate);
+    this.fetchStats(lastLoadedHistoryStatDate, undefined, undefined, true);
   }
 
   fetchStatsDataFromBackground(data) : Promise<IYoutubeDayStats[]>{
@@ -140,6 +165,7 @@ class HistoryStats extends React.Component<Props, State> {
   render() {
     const { historyStats, selectedStatsInterval, selectedDate } = this.state;
     const { selectedStatDisplayType } = this.state;
+    const selectedIntervalHistoryStats : any = historyStats[selectedStatsInterval] || [];
 
     console.log(`History stats render function : `, selectedStatsInterval, selectedStatDisplayType, historyStats);
     return (
@@ -175,19 +201,20 @@ class HistoryStats extends React.Component<Props, State> {
                 ))
               }
             </div>
-
-            {
-              (selectedStatDisplayType === StatsDisplayTypes.Table)
+            <React.Fragment>
+              {
+                (selectedStatDisplayType === StatsDisplayTypes.Table)
                 ? <StatsTabularView
                     selectedStatsInterval={selectedStatsInterval}
-                    historyStats={historyStats}
-                    fetchStats={this.fetchStats}
+                    selectedIntervalHistoryStats={selectedIntervalHistoryStats}
                   />
                 : <StatsGraphicalView
-                  historyStats={historyStats}
+                    selectedStatsInterval={selectedStatsInterval}
+                    selectedIntervalHistoryStats={selectedIntervalHistoryStats}
                 />
-            }
-
+              }
+              <button onClick={this.handleLoadMoreClick.bind(this, selectedIntervalHistoryStats)}>Load More</button>
+            </React.Fragment>
           </div>
         }
 

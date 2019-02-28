@@ -110,17 +110,17 @@ export default class YoutubeHistory implements IYoutubeHistory {
         }
 
         // History stats
-        const lastStats: IHistoryStats = await store.get(`historyStats.${userId}`);
-        const historyStats: IHistoryStats = new YoutubeHistoryStats({
-            newVideosToSave,
-            newVideosToSaveFormatted,
-            userId,
-            savedVideoData,
-            isContinuationData,
-            lastRun,
-            lastStats
-        });
-        let latestHistoryStats: IHistoryStats = await historyStats.updateHistoryStats(userId);
+        // const lastStats: IHistoryStats = await store.get(`historyStats.${userId}`);
+        // const historyStats: IHistoryStats = new YoutubeHistoryStats({
+        //     newVideosToSave,
+        //     newVideosToSaveFormatted,
+        //     userId,
+        //     savedVideoData,
+        //     isContinuationData,
+        //     lastRun,
+        //     lastStats
+        // });
+        // let latestHistoryStats: IHistoryStats = await historyStats.updateHistoryStats(userId);
 
         // update last run time
         const lastRunString: string = lastRun.toISOString();
@@ -138,7 +138,7 @@ export default class YoutubeHistory implements IYoutubeHistory {
             sender: APP_CONSTANTS.SENDER.BACKGROUND,
             userId
         });
-        console.log("YoutubeHistory model - Data saved in Db : ", lastSavedVideo, newVideosToSave, latestHistoryStats);
+        console.log("YoutubeHistory model - Data saved in Db : ", lastSavedVideo, newVideosToSave);
     }
 
 }

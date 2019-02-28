@@ -102,3 +102,35 @@ export function convertEnumToArray(enumType): Array<{
 
   return arr;
 }
+
+/**
+ * 
+ * @param timeInSecs 
+ * @param formatLevel {number} - from 1-4, 1-days, 4-ms
+ */
+export function convertDurationToProperFormat (timeInSecs : number, formatLevel = 3) {
+  let formattedDuration : string;
+
+  if (timeInSecs > 0) {
+    const days = timeInSecs / (60 * 60 * 24);
+    const absoluteDays = Math.floor(days);
+  
+    const hours = (days - absoluteDays) * 24;
+    const absoluteHours = Math.floor(hours);
+  
+    //Get remainder from hours and convert to minutes
+    const minutes = (hours - absoluteHours) * 60;
+    const absoluteMinutes = Math.floor(minutes);
+  
+    const seconds = (minutes - absoluteMinutes) * 60;
+    const absoluteSeconds = Math.floor(seconds);
+  
+    formattedDuration =  `${absoluteDays ? absoluteDays+"d " : ""}${absoluteHours ? absoluteHours+"h " : ""}${absoluteMinutes ? absoluteMinutes+"m " : ""}${absoluteSeconds + "s"}`;
+  } else {
+    formattedDuration = `-`;
+  }
+
+  formattedDuration = formattedDuration.split(" ").slice(0, formatLevel).join(" ");
+  
+  return formattedDuration;
+}

@@ -29,7 +29,7 @@ initialize();
 
 function initialize() {
   console.log("Initializing Background script...");
-  runRefreshCycle();
+  // runRefreshCycle();
   listenToTabEvents();
   chrome.runtime.onMessage.addListener(function (message: IExtensionEventMessage, sender: any, sendResponseFunc: Function) {
     if (message.sender === APP_CONSTANTS.SENDER.POPUP) {
@@ -98,7 +98,7 @@ async function handleMessagesFromContentScript(message: IExtensionEventMessage, 
         console.log("Handle user logged out...", sender);
         chrome.tabs.update(tabId, {
           active: true
-        }, () => { });
+        }, () => {});
 
         break;
 
@@ -154,10 +154,10 @@ async function handleMessagesFromPopupScript(message: IExtensionEventMessage, se
       break;
 
     case APP_CONSTANTS.DATA_EXCHANGE_TYPE.FETCH_STATS_FOR_INTERVAL:
-      const { selectedStatsInterval, selectedDate, loadCount, userId }: { selectedStatsInterval: StatsIntervalOptions, selectedDate, loadCount: number, userId: string } = data;
+      const { selectedStatsInterval, selectedDate, loadCount, selectedUserId }: { selectedStatsInterval: StatsIntervalOptions, selectedDate, loadCount: number, selectedUserId: string } = data;
       console.log(`Generating stats for interval :`, selectedStatsInterval, selectedDate);
       try {
-        const historyStats: any = await YoutubeHistoryStats.getStatsForInterval(selectedStatsInterval, selectedDate, userId, loadCount);
+        const historyStats: any = await YoutubeHistoryStats.getStatsForInterval(selectedStatsInterval, selectedDate, selectedUserId, loadCount);
         const lastSavedStatsInterval : number = await store.get(`lastAccessedStatsInterval`);
         if (!lastSavedStatsInterval || (lastSavedStatsInterval && lastSavedStatsInterval !== selectedStatsInterval)) {
           await store.set(`lastAccessedStatsInterval`, selectedStatsInterval);
