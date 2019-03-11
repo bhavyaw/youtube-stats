@@ -1,13 +1,11 @@
 import { APP_CONSTANTS } from './../../appConstants';
-import { isEmpty, keys, union, intersection } from 'lodash';
-import { IHistoryStats, IYoutubeDatesStats, IYoutubeVideo, IYoutubeHistory, IYoutubeDayStats } from 'models';
+import { IHistoryStats, IYoutubeVideo, IYoutubeHistory, IYoutubeDayStats } from 'models';
 import { storeAsync as store } from 'chrome-utils';
 import { formatDate } from './utils';
 import {convertDurationToProperFormat} from 'common/utils';
 import isString = require('lodash/isString');
-import { StatsIntervalOptions, statDisplayFields } from 'config';
+import { StatsIntervalOptions } from 'config';
 import isUndefined = require('lodash/isUndefined');
-import isNil = require('lodash/isNil');
 
 
 export default class YoutubeHistoryStats implements IHistoryStats {
@@ -70,6 +68,10 @@ export default class YoutubeHistoryStats implements IHistoryStats {
         stats.watchedOnDate = [fromDate.toISOString(), endDate.toISOString()];
         stats.dailyAverage = dailyAverage;
         stats.totalActiveDays = totalActiveDays;
+      }
+
+      if (statsInterval === StatsIntervalOptions.Yearly || statsInterval === StatsIntervalOptions.Monthly) {
+        // cache the results
       }
 
       return stats;

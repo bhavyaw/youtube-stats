@@ -134,3 +134,12 @@ export function convertDurationToProperFormat (timeInSecs : number, formatLevel 
   
   return formattedDuration;
 }
+
+export function showDesktopNotification(message : string, title = "", type = "basic", iconUrl = "../icon48.png") {
+  chrome.notifications.create({
+    message,
+    type,
+    title,
+    iconUrl
+  });
+}

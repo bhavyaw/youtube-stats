@@ -9,7 +9,10 @@ const appStrings: any = {
     totalActiveDays : "Active Days",
     formattedDuration : "Duration",
     formattedDailyAverage : "Daily Average"
-  }
+  },
+  activityControlsPageNewTitle : "Activity controls YH_CE",
+  myActivityPageNewTitle : "Google - My Activity YH_CE",
+  extensionUrlHash : "#yhce"
 };
 
 Object.freeze(appStrings);

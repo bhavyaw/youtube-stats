@@ -19,6 +19,13 @@ export enum StatsDisplayTypes {
   Graph = 1
 };
 
+export enum StatsDataFetchingCases {
+  date = 0,
+  interval = 1,
+  user = 2,
+  loadMore = 3
+}
+
 export const statDisplayFields = {
   [StatsIntervalOptions.Daily] : ["formattedDate", "totalCount", "formattedDuration"],
   [StatsIntervalOptions.Weekly] : ["formattedDate", "totalCount", "formattedDuration", "formmattedDailyAverage", "totalActiveDays"],

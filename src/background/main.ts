@@ -9,26 +9,31 @@ import isEmpty = require('lodash/isEmpty');
 import isDate = require("lodash/isDate");
 import { isNumber } from 'lodash';
 import YoutubeHistoryStats from './services/YoutubeHistoryStats';
-
-// @priority : high
-// TODO : close the opened tab once both the initial history extraction and continuation data fetching processes are complete
-
-// @priority : medium
-// TODO : catch and handle error gracefully occuring throughout the app
-
-console.log("inside background script!!! of youtube history chrome extension", store);
+import { showDesktopNotification } from 'common/utils';
+import appStrings from 'appStrings';
 
 // background js globals
 let stopFetchingContinuationData = false;
 let lastRun: Date = null;
+let activityControlsTabId: number = 0;
 // To take care of the missing messages
 const messageQueue: Set<IExtensionEventMessage> = new Set();
-let activityControlsTabId: number = 0;
 
-initialize();
+initializeBackgroundScript();
 
-function initialize() {
+function initializeBackgroundScript() {
   console.log("Initializing Background script...");
+  // browser start event 
+  // TODO : enable this in production
+  // chrome.runtime.onStartup.addListener(async () => {
+    
+  // });
+
+  handleBrowserStartEvent();
+}
+
+function handleBrowserStartEvent() {
+  showDesktopNotification(`Browser has started!!!`);
   // runRefreshCycle();
   listenToTabEvents();
   chrome.runtime.onMessage.addListener(function (message: IExtensionEventMessage, sender: any, sendResponseFunc: Function) {
@@ -42,15 +47,12 @@ function initialize() {
 }
 
 function onInstallHandler() {
-  // @priority - very low
-  // TODO : create simple interface for notifications
-  chrome.notifications.create({
-    message: `Running Refresh Cycle | Opening activity control tab`,
-    type: `basic`,
-    iconUrl: `../icon48.png`,
-    title: `Testing Notifications`
-  });
+  if (activityControlsTabId) {
+    showDesktopNotification(appStrings.alreadyRefreshing, 'Notice');
+    return;
+  }
 
+  showDesktopNotification(`Running Refresh Cycle | Opening activity control tab`, "Testing Notification");
   chrome.tabs.create({
     active: false,
     pinned: true,
@@ -63,16 +65,29 @@ function onInstallHandler() {
 
 function listenToTabEvents() {
   const activityControlsPageUrlRegex = /myaccount\.google\.com\/(intro\/)?activitycontrols$/i;
+  const myActivityPageRegex = /myactivity.google.com\/item/i;
 
   chrome.tabs.onUpdated.addListener((tabId: number, info: any, tab: any) => {
     if (info.status === 'complete') {
-      console.log(`Tab updated  : `, info, tab);
+      console.log(`Tab updated  : `, tab);
       const url: URL = new URL(tab.url);
       const completeUrl: string = url.host + url.pathname;
+      const urlHash : string = url.hash;
 
-      if (activityControlsPageUrlRegex.test(completeUrl) && tab.title === "Activity controls" && tab.id === activityControlsTabId) {
+      if (activityControlsPageUrlRegex.test(completeUrl) && tab.title === `Activity controls`) {
         console.log("Activity controls tab opened via extension programmatically");
-        runPreRefreshCycleChecks(tab);
+        if (tab.id === activityControlsTabId) {
+          runPreRefreshCycleChecks(tab);
+        } else if (urlHash === appStrings.extensionUrlHash) {
+          // delete stale extraction tabs
+          chrome.tabs.remove(tab.id);
+        }
+      } 
+
+      if (myActivityPageRegex.test(completeUrl) && tab.id !== activityControlsTabId && urlHash === appStrings.extensionUrlHash) {
+        console.log(`MyActivity tab opened by extension`, tab);
+        // delete stale extraction tabs
+        chrome.tabs.remove(tab.id);
       }
     }
   });
@@ -132,6 +147,10 @@ async function handleMessagesFromContentScript(message: IExtensionEventMessage, 
         console.log("Continuation data received from content script : ", data);
         saveContinuationData(tabId, data, userId, lastRun);
         break;
+
+      case APP_CONSTANTS.PROCESSES.SHOW_DESKTOP_NOTIFICATION : 
+        const {message, title} = data;
+        showDesktopNotification(message, title);
     }
   }
 }
@@ -184,6 +203,7 @@ async function runRefreshCycle() {
 
   if (isDate(lastIntervalChangeDate)) {
     runRefreshCycle = checkRefreshCycle(lastIntervalChangeDate, activeRefreshInterval);
+    console.log(`Running refresh cycle because `)
   } else if (isDate(lastRunDate)) {
     runRefreshCycle = checkRefreshCycle(lastRunDate, activeRefreshInterval);
   }
@@ -194,16 +214,7 @@ async function runRefreshCycle() {
    * Later if time : Actually check whether the refresh cycle is running in the open tab by some means...and if not then re-run refresh 
    * in the tab only by refreshing it
    */
-
-  if (activityControlsTabId) {
-    // chrome.notifications.create({
-    //   message: appStrings.alreadyRefreshing,
-    //   type: `basic`,
-    //   title: `Notice`,
-    //   iconUrl: `../icon48.png`
-    // });
-    return;
-  }
+  
   if (runRefreshCycle) {
     onInstallHandler();
   }
@@ -232,12 +243,7 @@ async function updateRefreshInterval(newRefreshInterval: number, sendResponseFun
         newRefreshInterval
       });
     } catch (error) {
-      chrome.notifications.create({
-        message: `Some error occured in updating refresh Interval`,
-        type: "basic",
-        title: "Error",
-        iconUrl: `../icon48.png`
-      });
+      showDesktopNotification("Some error occured in updating refresh Interval", "Error");
     }
   } else {
     throw new Error(`No refresh interval or incorrect received from popup.ts : ${newRefreshInterval}`);

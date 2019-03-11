@@ -1,7 +1,7 @@
 import * as React from 'react';
 import StatsTabularView from './tabularStats';
 import StatsGraphicalView from './graphicalStats';
-import { StatsIntervalOptions, StatsDisplayTypes, appConfig } from "config";
+import { StatsIntervalOptions, StatsDisplayTypes, appConfig, StatsDataFetchingCases } from "config";
 import { convertEnumToArray, sendMessageToBackgroundScript } from 'common/utils';
 import DatePicker from "react-datepicker";
 import { storeAsync as store } from 'chrome-utils';
@@ -18,25 +18,28 @@ export interface Props {
 }
 
 export interface State {
-  selectedStatDisplayType: number,
+  selectedStatDisplayType ?: number,
   historyStats ?: any,
   selectedStatsInterval ?: number,
-  selectedDate: Date 
+  selectedDate ?: Date 
 }
 
 class HistoryStats extends React.Component<Props, State> {
   private statsIntervalOptions: any[] = [];
   private statsDisplayType: any[] = [];
+  private BLANK_HISTORY_STATE_OBJECT = {
+    [StatsIntervalOptions.Daily] : null,
+    [StatsIntervalOptions.Weekly] : null,
+    [StatsIntervalOptions.Monthly] : null,
+    [StatsIntervalOptions.Yearly] : null,
+  };
 
   constructor(props: Props) {
     super(props);
     this.state = {  
       selectedStatDisplayType: appConfig.defaultStatDisplayType,
       historyStats : {
-        [StatsIntervalOptions.Daily] : null,
-        [StatsIntervalOptions.Weekly] : null,
-        [StatsIntervalOptions.Monthly] : null,
-        [StatsIntervalOptions.Yearly] : null,
+        ...this.BLANK_HISTORY_STATE_OBJECT
       },
       selectedDate: new Date()
     };
@@ -55,7 +58,7 @@ class HistoryStats extends React.Component<Props, State> {
 
     if (newSelectedUser !== previousSelectedUser && newSelectedUser !== "") {
       console.log(`Selected user changed : `, newSelectedUser, previousSelectedUser);
-      this.fetchStats(undefined, newSelectedUser);
+      this.fetchStats(undefined, newSelectedUser, undefined, StatsDataFetchingCases.user);
     }
   }
 
@@ -63,12 +66,21 @@ class HistoryStats extends React.Component<Props, State> {
     console.log(`Stat interval changed : `, e.target.value);
     // this.setState()
     const newStatInterval: number = Number(e.target.value);
-    this.fetchStats(undefined, undefined, newStatInterval);
+    const existingDataForNewInterval : IYoutubeDayStats = this.state.historyStats[newStatInterval];
+    if (isEmpty(existingDataForNewInterval)) {
+      console.log(`Data doesn't exists for this interval...fetching data`);
+      this.fetchStats(undefined, undefined, newStatInterval, StatsDataFetchingCases.interval);
+    } else {
+      console.log(`Data already exists for this interval...no fetch`, existingDataForNewInterval)
+      this.setState({
+        selectedStatsInterval : newStatInterval
+      });
+    }
   }
 
   handleStatsDateChange = (newSelectedDate) => {
     console.log(`Inside handle active date change...`, newSelectedDate);
-    this.fetchStats(newSelectedDate);
+    this.fetchStats(newSelectedDate, undefined, undefined, StatsDataFetchingCases.date);
   }
 
   handleStatDisplayTypeChange = (newDisplayTypeValue) => {
@@ -87,15 +99,18 @@ class HistoryStats extends React.Component<Props, State> {
       selectedStatsInterval
     }, () => {
       console.log(`Fetching initial stats : `);
-      this.fetchStats(undefined, undefined, selectedStatsInterval);
+      this.fetchStats(undefined, undefined, selectedStatsInterval, StatsDataFetchingCases.interval);
     });
   }
 
+  /**
+   * TODO : convert params to single object
+   */
   fetchStats = async(
     selectedDate = this.state.selectedDate, 
     selectedUserId = this.props.selectedUserId, 
     selectedStatsInterval = this.state.selectedStatsInterval,
-    loadMoreCase = false
+    statsDataFetchingCase : StatsDataFetchingCases
   ) => {
     console.log(`Sending message to abckground script to fetch history stats : `, selectedDate, selectedUserId);
     const requestData = {
@@ -109,24 +124,24 @@ class HistoryStats extends React.Component<Props, State> {
     if (!isEmpty(response)) {
       const {historyStats} = this.state; 
       const lastLoadedHistoryStats : IYoutubeDayStats[] = historyStats[selectedStatsInterval] || [];
-      const newHistoryStats : IYoutubeDayStats[] = loadMoreCase ? lastLoadedHistoryStats.concat(response) : response;
+      const newHistoryStats : IYoutubeDayStats[] = (statsDataFetchingCase === StatsDataFetchingCases.loadMore) ? lastLoadedHistoryStats.concat(response) : response;
 
-      let newState:any;
-      if (!loadMoreCase) {
-        newState = {
-          selectedStatsInterval,
-          selectedDate,
-          selectedUserId
-        };
-      }
 
-      this.setState(prevState => ({
+      this.setState(prevState => {
+        const statsForOtherIntervals = (
+          statsDataFetchingCase === StatsDataFetchingCases.interval || 
+          statsDataFetchingCase === StatsDataFetchingCases.loadMore
+        ) ? prevState.historyStats : this.BLANK_HISTORY_STATE_OBJECT;
+        const newState = (statsDataFetchingCase === StatsDataFetchingCases.loadMore) ? {} : {selectedStatsInterval, selectedDate, selectedUserId};
+
+        return {
           ...newState,
           historyStats : {
-            ...prevState.historyStats,
+            ...statsForOtherIntervals,
             [selectedStatsInterval] : newHistoryStats
           }
-      }));
+        }
+      });
     }
   }
 
@@ -145,7 +160,7 @@ class HistoryStats extends React.Component<Props, State> {
     lastLoadedHistoryStatDate  = new Date(lastLoadedHistoryDateString);
     lastLoadedHistoryStatDate = new Date(lastLoadedHistoryStatDate.getTime() - APP_CONSTANTS.DAY_IN_MS); // need previous week, month and so on
     console.log(`Clicked on handle load more click...last loaded date was : `,historyStats, lastLoadedHistoryStat, lastLoadedHistoryStatDate);
-    this.fetchStats(lastLoadedHistoryStatDate, undefined, undefined, true);
+    this.fetchStats(lastLoadedHistoryStatDate, undefined, undefined, StatsDataFetchingCases.loadMore);
   }
 
   fetchStatsDataFromBackground(data) : Promise<IYoutubeDayStats[]>{

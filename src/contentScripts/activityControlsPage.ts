@@ -2,9 +2,9 @@ import { IExtensionEventMessage } from "models";
 import { APP_CONSTANTS } from "appConstants";
 import { sendMessageToBackgroundScript } from "common/utils";
 import { delegate } from 'receptor';
+import appStrings from "appStrings";
 
 console.log("inside activity controls page content script!!!");
-
 startContentScript();
 
 function startContentScript() {
@@ -34,7 +34,7 @@ async function handleMessageFromBackgroundScript(messages: IExtensionEventMessag
 }
 
 function runPreRefreshCycleChecks() {
-  document.title = "Activity controls - Opened by Youtube History Chrome Extension"
+  document.title = appStrings.activityControlsPageNewTitle;
   console.log("inside run pre refresh cycle checks...");
   const urlPathname: string = location.pathname;
 
@@ -91,8 +91,14 @@ function listenToHistorySettingChanges(): void {
 function initiateRefreshCycle() {
   // Hide any alert messages 
   console.log("### -> Initiating refresh cycle");
-  alert('Opening myactivity page to extract youtube history');
+  console.log(`Activity controller content script : redirecting to myactivity page. Initiated by the background script...`);
+  sendMessageToBackgroundScript({
+    type : APP_CONSTANTS.PROCESSES.SHOW_DESKTOP_NOTIFICATION,
+    data : {
+      message : `Activity Controller content script : Redirecting to myActivity Page - Initiated by background script via runRefreshCycle`,
+      title : `Testing Alert`
+    }
+  }, null, APP_CONSTANTS.SENDER.CONTENT_SCRIPT);
   location.href = "https://myactivity.google.com/item?restrict=ytw&hl=en-GB";
 }
-
 

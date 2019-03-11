@@ -1,3 +1,4 @@
+import appStrings from 'appStrings';
 import { sendMessageToBackgroundScript, convertUserIdToSavableForm } from 'common/utils';
 import { APP_CONSTANTS } from "appConstants";
 import { IExtensionEventMessage, IYoutubeVideo } from "models";
@@ -18,7 +19,7 @@ function startContentScript() {
 
 function windowOnloadHandler() {
   console.log(`Youtube History item page loaded...`);
-  extractUserId();
+  sendUserIdToBackgroundScript();
 }
 
 function extensionMessageListener() {
@@ -36,6 +37,7 @@ async function handleMessageFromBackgroundScript(messages: IExtensionEventMessag
       switch (messageType) {
         case APP_CONSTANTS.DATA_EXCHANGE_TYPE.GET_INITIAL_YOUTUBE_HISTORY_DATA:
           const lastSavedVideoDetails: IYoutubeVideo = data;
+          document.title = appStrings.myActivityPageNewTitle;
           startDataExtractionProcess(lastSavedVideoDetails);
           break;
 
@@ -49,7 +51,7 @@ async function handleMessageFromBackgroundScript(messages: IExtensionEventMessag
   }
 }
 
-async function extractUserId() {
+async function sendUserIdToBackgroundScript() {
   console.log("inside extract user Id");
   await loadExternalDataFetchingScript('/js/variableAccessScriptNew.js', (variableAccessSriptMessageHandler));
   console.log("inside start data extraction process...post wait for external script load and also some other work");
