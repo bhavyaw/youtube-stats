@@ -23,7 +23,7 @@ export async function startDataExtractionProcess(lastSavedVideoDetails: IYoutube
     await loadExternalDataFetchingScript('/js/variableAccessScriptNew.js', variableAccessSriptMessageHandler);
     sendMessageToVariableAccessScript({
       type: APP_CONSTANTS.DATA_EXCHANGE_TYPE.GET_INITIAL_YOUTUBE_HISTORY_DATA
-    }, "https://myactivity.google.com");
+    });
   } else {
     sendMessageToBackgroundScript({
       type: APP_CONSTANTS.DATA_EXCHANGE_TYPE.ERROR,

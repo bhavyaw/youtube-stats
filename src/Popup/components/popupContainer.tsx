@@ -7,7 +7,6 @@ import { APP_CONSTANTS } from 'appConstants';
 import { appConfig } from "config";
 import RefreshInterval from './refreshIntervals';
 import HistoryStats from './historyStats';
-import isEmpty = require('lodash/isEmpty');
 
 export interface Props {
 
@@ -15,12 +14,10 @@ export interface Props {
 
 export interface State {
   noUsers: boolean,
-  // historyStats?: IHistoryStats,
   users?: Array<any>,
   lastRunDate?: string,
   selectedUser: string,
   activeRefreshInterval: number,
-  historyStats?: any
 }
 
 class PopupContainer extends React.Component<Props, State> {
@@ -50,24 +47,24 @@ class PopupContainer extends React.Component<Props, State> {
 
         switch (messageType) {
           case APP_CONSTANTS.DATA_EXCHANGE_TYPE.HISTORY_DATA_UPDATED:
-            console.log("Youtube history data updated...");
-            this.setState((prevState) => {
-              const { selectedUser } = prevState;
-              if (selectedUser === userId) {
-                console.log(`history has been updated for the currently shown user...update the corresponding component...`);
-                this.getHistoryDataForUser(selectedUser).then(historyData => {
-                  const { lastRunDate } = historyData;
-                  console.log("inside refreshHistoryStats : ", lastRunDate, selectedUser);
-                  this.setState({
-                    ...this.state,
-                    lastRunDate,
-                    selectedUser: selectedUser
-                  });
-                });
+            // console.log("Youtube history data updated...");
+            // this.setState((prevState) => {
+            //   const { selectedUser } = prevState;
+            //   if (selectedUser === userId) {
+            //     console.log(`history has been updated for the currently shown user...update the corresponding component...`);
+            //     this.getHistoryDataForUser(selectedUser).then(historyData => {
+            //       const { lastRunDate } = historyData;
+            //       console.log("inside refreshHistoryStats : ", lastRunDate, selectedUser);
+            //       this.setState({
+            //         ...this.state,
+            //         lastRunDate,
+            //         selectedUser: selectedUser
+            //       });
+            //     });
 
-              }
-              return {};
-            });
+            //   }
+            //   return {};
+            // });
             break;
         }
       }
@@ -75,14 +72,14 @@ class PopupContainer extends React.Component<Props, State> {
   }
 
   async fetchInitialDataForLastActiveUser() {
-    console.log("inside refresh history stats");
+    // console.log("inside refresh history stats");
     const lastActiveUserId = await store.get(`lastActiveUser`) || "";
 
     if (lastActiveUserId) {
       const { lastRunDate } = await this.getHistoryDataForUser(lastActiveUserId);
       let users: Array<any> = await store.get(`users`);
       let activeRefreshInterval: number = await store.get(`activeRefreshInterval`) || appConfig.defaultRefreshInterval;
-      console.log(`fetchInitialDataForLastActiveUser : `, users, lastRunDate);
+      // console.log(`fetchInitialDataForLastActiveUser : `, users, lastRunDate);
 
       users = users.map(userId => {
         return {
@@ -107,18 +104,16 @@ class PopupContainer extends React.Component<Props, State> {
     }
   }
 
-  refresHistoryStats = async () => {
+  refresHistoryStats = async (selectedUser : string) => {
     console.log(`RefreshHistoryStats : `);
-    console.log(`Sending message to background script to initiate history stats for user`);
+    console.log(`Sending message to background script to initiate history stats for user`, selectedUser);
 
-    // @priority : low 
-    // TODO : to show alert box with the message - Refreshing history for the logged in Google user - xxxxxx. Note : Refreshing always
-    // takes place for the currently loggedIn user and not the selectedUser
     // @priority : medium
     // TODO : after refreshing is complete - show the details of the user for which the refreshing has taken place and hide the alert box
 
     sendMessageToBackgroundScript({
       type: APP_CONSTANTS.PROCESSES.MANUAL_RUN_REFRESH_CYCLE,
+      userId : selectedUser
     }, null, APP_CONSTANTS.SENDER.POPUP);
   }
 
@@ -164,9 +159,8 @@ class PopupContainer extends React.Component<Props, State> {
   }
 
   render() {
-    const { noUsers, selectedUser, users, lastRunDate = "", activeRefreshInterval, historyStats } = this.state;
-
-    console.log(`Popupcontainer render function : `, historyStats);
+    const { noUsers, selectedUser, users, lastRunDate = "", activeRefreshInterval } = this.state;
+    console.log(`PopupContainer rendering...`);
     return (
       <section>
 
@@ -180,7 +174,7 @@ class PopupContainer extends React.Component<Props, State> {
                   onUserChange={this.showDetailsForNewUser}
                   lastRunDate={lastRunDate}
                   selectedUserId={selectedUser}
-                  onRefreshClick={this.refresHistoryStats}
+                  onRefreshClick={this.refresHistoryStats.bind(this, selectedUser)}
                 />
                 <br />
                 <RefreshInterval

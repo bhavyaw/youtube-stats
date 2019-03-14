@@ -28,7 +28,8 @@ export default class PopupRefresh extends React.Component<AppProps, AppState> {
 
     render() {
         const { lastRunDate, selectedUserId, onUserChange, users } = this.props;
-
+        console.log(`PopupHeader rendering...`);
+        
         return (
             <section>
                 <UserDetails

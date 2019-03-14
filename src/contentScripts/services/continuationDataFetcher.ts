@@ -48,6 +48,7 @@ class ContinuationDataService {
       const newContinuationParams : string = responseData[1];
 
       if (isNil(newlyWatchedVideos)) {
+        alert("Newly watched videos missing from the response :    " + newlyWatchedVideos + "  " + newContinuationParams);
         message = {
           type : APP_CONSTANTS.DATA_EXCHANGE_TYPE.CONTINUATION_DATA,
           data : {

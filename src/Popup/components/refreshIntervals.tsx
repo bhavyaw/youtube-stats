@@ -28,7 +28,7 @@ class RefreshInterval extends React.Component<Props, State> {
       }
     }
 
-    console.log(`Refresh Intervals are  : `, RefreshIntervals, this.refreshIntervalOptions);
+    // console.log(`Refresh Intervals are  : `, RefreshIntervals, this.refreshIntervalOptions);
   }
 
   handleRefreshIntervalChange(newRefreshIntervalValue, e) {
@@ -39,13 +39,12 @@ class RefreshInterval extends React.Component<Props, State> {
   render() {
     const { activeRefreshInterval } = this.props;
 
-    console.log(`RefreshInterval component render method : `, activeRefreshInterval);
+    console.log(`RefreshInterval rendering... `, activeRefreshInterval);
 
     return (
       <section>
         {
           this.refreshIntervalOptions.map(({ intervalName, intervalValue }) => {
-            console.log(`Creating radio btns for refresh intervals : `, intervalName, intervalValue);
             return (
               <label
                 key={intervalName}>

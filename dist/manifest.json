@@ -22,7 +22,7 @@
         },
         {
             "matches": ["https://myactivity.google.com/item*"],
-            "js": ["./js/vendor.js", "./js/youtubeHistoryItemsPage.js"]
+            "js": ["./js/vendor.js", "./js/myActivityPage.js"]
         }
     ],
 

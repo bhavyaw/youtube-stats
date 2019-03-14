@@ -50,7 +50,9 @@ async function injectVariableAccessScript(filePath, headNode : HTMLElement) : Pr
     }); 
 }
 
-export function sendMessageToVariableAccessScript(message : IExtensionEventMessage, targetUrl : string, windowNode ?: Window) {
+export function sendMessageToVariableAccessScript(message : IExtensionEventMessage, windowNode ?: Window) {
+    const targetUrl = location.protocol + "//" + location.hostname;
     windowNode = windowNode || window;
+    console.log(`Sending Message to variable access script...: `, targetUrl);    
     windowNode.postMessage(message, targetUrl);
 }

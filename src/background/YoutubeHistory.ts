@@ -133,11 +133,11 @@ export default class YoutubeHistory implements IYoutubeHistory {
 
         // update last active user
         await store.set(`lastActiveUser`, userId);
-        chrome.runtime.sendMessage({
-            type: APP_CONSTANTS.DATA_EXCHANGE_TYPE.HISTORY_DATA_UPDATED,
-            sender: APP_CONSTANTS.SENDER.BACKGROUND,
-            userId
-        });
+        // chrome.runtime.sendMessage({
+        //     type: APP_CONSTANTS.DATA_EXCHANGE_TYPE.HISTORY_DATA_UPDATED,
+        //     sender: APP_CONSTANTS.SENDER.BACKGROUND,
+        //     userId
+        // });
         console.log("YoutubeHistory model - Data saved in Db : ", lastSavedVideo, newVideosToSave);
     }
 

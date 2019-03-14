@@ -10,7 +10,7 @@ startPopUpScript();
 
 function startPopUpScript() {
   initialize();
-  chrome.runtime.onMessage.addListener(handleMessageFromBackgroundScript);
+  // chrome.runtime.onMessage.addListener(handleMessageFromBackgroundScript);
 }
 
 function initialize() {
@@ -24,20 +24,20 @@ function renderPopupComponent() {
   ReactDOM.render(<PopupContainer />, rootEl);
 }
 
-function handleMessageFromBackgroundScript(message: IExtensionEventMessage, sender: any, responseCallback: Function) {
-  console.log("inside handle messages from the backgroud script : ", message, sender);
-  if (!sender.tab) {
-    console.log("Message received from background script : ", message);
+// function handleMessageFromBackgroundScript(message: IExtensionEventMessage, sender: any, responseCallback: Function) {
+//   console.log("inside handle messages from the backgroud script : ", message, sender);
+//   if (!sender.tab) {
+//     console.log("Message received from background script : ", message);
 
-    const messageType = message.type;
-    switch (messageType) {
+//     const messageType = message.type;
+//     switch (messageType) {
 
-      case APP_CONSTANTS.PROCESSES.HIGHLIGHT_TAB:
-        console.log("from inside the popup script...handling user logged out...");
-        break;
-    }
-  }
-}
+//       case APP_CONSTANTS.PROCESSES.HIGHLIGHT_TAB:
+//         console.log("from inside the popup script...handling user logged out...");
+//         break;
+//     }
+//   }
+// }
 
 function sendMessageToBackgroundScript(message: IExtensionEventMessage) {
   chrome.runtime.sendMessage({

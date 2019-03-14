@@ -16,25 +16,28 @@ import appStrings from 'appStrings';
 let stopFetchingContinuationData = false;
 let lastRun: Date = null;
 let activityControlsTabId: number = 0;
+let newSelectedUserInPopup : string = "";
 // To take care of the missing messages
 const messageQueue: Set<IExtensionEventMessage> = new Set();
 
 initializeBackgroundScript();
 
+const storeRemove = store.remove;
+
 function initializeBackgroundScript() {
-  console.log("Initializing Background script...");
+  console.log("Initializing Background script...", store, storeRemove);
   // browser start event 
   // TODO : enable this in production
-  // chrome.runtime.onStartup.addListener(async () => {
-    
-  // });
+  chrome.runtime.onStartup.addListener(async () => {
+    showDesktopNotification(`Keep the background script devtools open to track random running of the script`);
+  });
 
   handleBrowserStartEvent();
 }
 
 function handleBrowserStartEvent() {
   showDesktopNotification(`Browser has started!!!`);
-  // runRefreshCycle();
+  intiateRefreshCycle();
   listenToTabEvents();
   chrome.runtime.onMessage.addListener(function (message: IExtensionEventMessage, sender: any, sendResponseFunc: Function) {
     if (message.sender === APP_CONSTANTS.SENDER.POPUP) {
@@ -46,7 +49,7 @@ function handleBrowserStartEvent() {
   });
 }
 
-function onInstallHandler() {
+function runRefreshCycle() {
   if (activityControlsTabId) {
     showDesktopNotification(appStrings.alreadyRefreshing, 'Notice');
     return;
@@ -158,13 +161,13 @@ async function handleMessagesFromContentScript(message: IExtensionEventMessage, 
 async function handleMessagesFromPopupScript(message: IExtensionEventMessage, sender, sendResponseFunc) {
   console.log(`Handling messages from popup script : `, message);
 
-  const messageType: string = message.type;
-  const data: any = message.data;
+  const {data, userId, type : messageType} = message;
 
   switch (messageType) {
     case APP_CONSTANTS.PROCESSES.MANUAL_RUN_REFRESH_CYCLE:
-      console.log(`Manually running refresh cycle for user`);
-      runRefreshCycle();
+      console.log(`Manually running refresh cycle for user`, userId);
+      newSelectedUserInPopup = userId;
+      intiateRefreshCycle();
       break;
 
     case APP_CONSTANTS.PROCESSES.UPDATE_REFRESH_INTERVAL:
@@ -189,7 +192,7 @@ async function handleMessagesFromPopupScript(message: IExtensionEventMessage, se
 }
 
 // NOTE : refresh interval cannot be per user because we get userId after opening the tab and not before
-async function runRefreshCycle() {
+async function intiateRefreshCycle() {
   console.log(`\n====> Inside run refresh cycle...\n`);
   const lastRunString: string = await store.get(`lastRun`);
   let activeRefreshInterval: number = await store.get(`activeRefreshInterval`);
@@ -199,13 +202,12 @@ async function runRefreshCycle() {
 
   const lastRunDate: Date = new Date(lastRunString);
   const lastIntervalChangeDate: Date = new Date(lastIntervalChangeDateString);
-  let runRefreshCycle: boolean = false; // first time
+  let shouldRunRefreshCycle: boolean = false; // first time
 
   if (isDate(lastIntervalChangeDate)) {
-    runRefreshCycle = checkRefreshCycle(lastIntervalChangeDate, activeRefreshInterval);
-    console.log(`Running refresh cycle because `)
+    shouldRunRefreshCycle = canRunRefreshCycle(lastIntervalChangeDate, activeRefreshInterval);
   } else if (isDate(lastRunDate)) {
-    runRefreshCycle = checkRefreshCycle(lastRunDate, activeRefreshInterval);
+    shouldRunRefreshCycle = canRunRefreshCycle(lastRunDate, activeRefreshInterval);
   }
 
   /**
@@ -215,8 +217,8 @@ async function runRefreshCycle() {
    * in the tab only by refreshing it
    */
   
-  if (runRefreshCycle) {
-    onInstallHandler();
+  if (shouldRunRefreshCycle) {
+    runRefreshCycle();
   }
 }
 
@@ -226,6 +228,12 @@ function runPreRefreshCycleChecks(activeTab: chrome.tabs.Tab) {
     const message: IExtensionEventMessage = {
       type: APP_CONSTANTS.PROCESSES.RUN_PRE_REFRESH_CHECKS,
     };
+
+    if (!isEmpty(newSelectedUserInPopup)) {
+      Object.assign(message, {
+        userId : newSelectedUserInPopup
+      });
+    }
 
     sendMessageToActiveTab(activeTab.id, message);
   }
@@ -331,7 +339,7 @@ function sendMessageToActiveTab(preferableTabId: number, message: IExtensionEven
 }
 
 // TODO : better nomenclature
-function checkRefreshCycle(dateToCompare: Date, activeRefreshInterval: number) {
+function canRunRefreshCycle(dateToCompare: Date, activeRefreshInterval: number) {
   const activeRefreshIntervalTimeInMs: number = activeRefreshInterval * 24 * 60 * 60 * 1000;
   let currentDate: Date = new Date();
   currentDate = new Date(currentDate.setHours(0, 0, 0, 0));

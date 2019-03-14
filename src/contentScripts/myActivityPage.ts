@@ -57,7 +57,7 @@ async function sendUserIdToBackgroundScript() {
   console.log("inside start data extraction process...post wait for external script load and also some other work");
   sendMessageToVariableAccessScript({
     type: APP_CONSTANTS.DATA_EXCHANGE_TYPE.GET_USER_ID
-  }, "https://myactivity.google.com");
+  });
 }
 
 function variableAccessSriptMessageHandler(message) {

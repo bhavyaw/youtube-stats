@@ -2,6 +2,8 @@ export enum ActivePage {
     home = "home",
     history = "history",
     video = "video",
+    activityControls = "activityControls",
+    myActivity = "myActivity",
     other = "other"
 }
 

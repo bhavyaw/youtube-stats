@@ -3,10 +3,13 @@ import { IExtensionEventMessage, IRequestHeaders, IRoute, IRoutingType } from "m
 
 class WindowCommunicator {
     listeners: Function[] = [];
-    targetUrl: string = "https://myactivity.google.com";
+    targetUrl: string = "";
     listenerAlreadyExist: boolean = false;
 
-    constructor() { }
+    constructor() {
+        this.targetUrl = location.protocol + "//" + location.hostname;
+        console.log(`Inside window communicator constructor : `, this.targetUrl);
+    }
 
     addListener(windowNode, onNewMessage) {
         if (!this.listenerAlreadyExist) {
@@ -27,8 +30,8 @@ class WindowCommunicator {
         this.listeners.forEach(listener => listener(e));
     }
 
-    sendMessage(windowNode, message) {
-        windowNode.postMessage(message, this.targetUrl);
+    sendMessage(windowNode, message, targetUrl = this.targetUrl) {
+        windowNode.postMessage(message, targetUrl);
     }
 }
 
@@ -38,12 +41,13 @@ listenToMessagesFromContentScript();
 
 // listeners 
 function listenToMessagesFromContentScript() {
+    console.log("VARIABLE_ACCESS_SCRIPT : listening for messages from CONTENT_SCRIPT : ", window);
     windowCommunicator.addListener(window, handleMessageFromContentScript);
 }
 
 function handleMessageFromContentScript(event) {
     const message: IExtensionEventMessage = event.data;
-    const contentType = message.type;
+    const {type : contentType} = message;
 
     console.log(`Message received from CONTENT SCRIPT :`, contentType, "\n\n");
     switch (contentType) {

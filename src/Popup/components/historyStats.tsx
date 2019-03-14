@@ -43,7 +43,6 @@ class HistoryStats extends React.Component<Props, State> {
       },
       selectedDate: new Date()
     };
-    console.log(`historyStats constructor : `, this.state, appConfig);
     this.statsIntervalOptions = convertEnumToArray(StatsIntervalOptions);
     this.statsDisplayType = convertEnumToArray(StatsDisplayTypes);
   }
@@ -93,12 +92,12 @@ class HistoryStats extends React.Component<Props, State> {
   async fetchInitialStatsData() {
     let selectedStatsInterval : number = await store.get(`lastAccessedStatsInterval`);
     selectedStatsInterval = selectedStatsInterval || appConfig.defaultStatsInterval;
-    console.log(`fetchInitialStatsData : `, selectedStatsInterval);
+    // console.log(`fetchInitialStatsData : `, selectedStatsInterval);
 
     this.setState({
       selectedStatsInterval
     }, () => {
-      console.log(`Fetching initial stats : `);
+      // console.log(`Fetching initial stats : `);
       this.fetchStats(undefined, undefined, selectedStatsInterval, StatsDataFetchingCases.interval);
     });
   }
@@ -112,7 +111,7 @@ class HistoryStats extends React.Component<Props, State> {
     selectedStatsInterval = this.state.selectedStatsInterval,
     statsDataFetchingCase : StatsDataFetchingCases
   ) => {
-    console.log(`Sending message to abckground script to fetch history stats : `, selectedDate, selectedUserId);
+    // console.log(`Sending message to abckground script to fetch history stats : `, selectedDate, selectedUserId);
     const requestData = {
       selectedStatsInterval, 
       selectedDate,
@@ -182,7 +181,7 @@ class HistoryStats extends React.Component<Props, State> {
     const { selectedStatDisplayType } = this.state;
     const selectedIntervalHistoryStats : any = historyStats[selectedStatsInterval] || [];
 
-    console.log(`History stats render function : `, selectedStatsInterval, selectedStatDisplayType, historyStats);
+    console.log(`History stats rendering... `, selectedStatsInterval, selectedStatDisplayType, historyStats);
     return (
       <section>
         {

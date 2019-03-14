@@ -6,9 +6,11 @@ import {convertDurationToProperFormat} from 'common/utils';
 import isString = require('lodash/isString');
 import { StatsIntervalOptions } from 'config';
 import isUndefined = require('lodash/isUndefined');
+import isEmpty = require('lodash/isEmpty');
+import { kebabCase, cloneDeep, clone } from 'lodash';
 
 
-export default class YoutubeHistoryStats implements IHistoryStats {
+class YoutubeHistoryStatsService implements IHistoryStats {
   totalCount: number = 0;
   totalWatchedDuration: number = 0;
   lastRun: string;
@@ -16,14 +18,26 @@ export default class YoutubeHistoryStats implements IHistoryStats {
   dailyAverage: number = 0;
   totalActiveDays: number = 0;
 
-  constructor(data: any) {}
+  constructor() {}
 
-  public static async getStatForDates(statsInterval: StatsIntervalOptions, fromDate: Date, endDate: Date, userId, formattedDate) {
+  // TODO : try to use the cache decorator/annotation here
+  public async getStatForDates (statsInterval: StatsIntervalOptions, fromDate: Date, endDate: Date, userId, formattedDate) {
+    let cachedStatsForDate : IYoutubeDayStats;
+    // first try to retrive from cache
+    if (statsInterval === StatsIntervalOptions.Yearly || statsInterval === StatsIntervalOptions.Monthly) {
+      cachedStatsForDate  = await this.retrieveStatsFromCache(userId, formattedDate);
+      console.log(`Retrieved cached stats...`, formattedDate, cachedStatsForDate);
+      if (!isEmpty(cachedStatsForDate)) {
+        console.log(`Stats retrived from cache only. Not going throught the entire process again...`, formattedDate, cachedStatsForDate);
+        return cachedStatsForDate;
+      }
+    }
+
     fromDate = isString(fromDate) ? new Date(fromDate) : fromDate;
     let tempFromDate = new Date(fromDate);
     const videoHistory: IYoutubeHistory = await store.get(`videoHistory.${userId}`);
 
-    if (videoHistory) {
+    if (!isEmpty(videoHistory)) {
       let lastWatchedVideo: any;
       let totalCount = 0, 
           totalWatchedDuration = 0, 
@@ -33,7 +47,7 @@ export default class YoutubeHistoryStats implements IHistoryStats {
           fromDateGreaterThanEndDate = false;
 
       while (!fromDateGreaterThanEndDate) {
-        let dayStats: any = YoutubeHistoryStats.getStatForDay(videoHistory, tempFromDate, totalActiveDays);
+        let dayStats: any = this.getStatForDay(videoHistory, tempFromDate, totalActiveDays);
         let { dayTotalCount, dayTotalDuration, lastWatchedVideoOfDay } = dayStats;
   
         ({ totalActiveDays } = dayStats);
@@ -70,15 +84,18 @@ export default class YoutubeHistoryStats implements IHistoryStats {
         stats.totalActiveDays = totalActiveDays;
       }
 
-      if (statsInterval === StatsIntervalOptions.Yearly || statsInterval === StatsIntervalOptions.Monthly) {
-        // cache the results
+      if (statsInterval === StatsIntervalOptions.Monthly || statsInterval === StatsIntervalOptions.Yearly) {
+        const statsDupe = clone(stats);
+        formattedDate = kebabCase(formattedDate);
+        await store.set(`cache.stats.${userId}.${formattedDate}`, statsDupe);
+        console.log(`Saving Stats in Cache :`, formattedDate, statsDupe);
       }
 
       return stats;
     }
   }
 
-  private static getStatForDay(videoHistory: IYoutubeHistory, date: Date, totalActiveDays: number) {
+  private getStatForDay(videoHistory: IYoutubeHistory, date: Date, totalActiveDays: number) {
     const formattedCurrentDate = formatDate(date, "dd-mm-yyyy");
     const videosForCurrentDate = videoHistory[formattedCurrentDate] || [];
     let dayTotalCount = 0, dayTotalDuration = 0;
@@ -106,9 +123,9 @@ export default class YoutubeHistoryStats implements IHistoryStats {
    * @param date - date representing dates, week, month or year
    * @param loadCount {number} : Number of days, weeks, months data to load
    */
-  public static async getStatsForInterval(statsInterval: StatsIntervalOptions, date: Date, userId: string, loadCount: number) {
+  public async getStatsForInterval(statsInterval: StatsIntervalOptions, date: Date, userId: string, loadCount: number) {
     console.log(`getStatsForInterval() : generating stats for interval`, statsInterval, date);
-    const statsPromises: Array<Promise<IYoutubeDayStats>> = [];
+    let finalStats: Array<IYoutubeDayStats> = [];
     date = new Date(date);
 
     switch (statsInterval) {
@@ -122,7 +139,7 @@ export default class YoutubeHistoryStats implements IHistoryStats {
             month : "numeric",
             year : "2-digit"
           });
-          statsPromises.push(YoutubeHistoryStats.getStatForDates(statsInterval, fromDate, fromDate, userId, formattedDate));
+          finalStats.push(await this.getStatForDates(statsInterval, fromDate, fromDate, userId, formattedDate));
         }
         break;
       }
@@ -143,8 +160,8 @@ export default class YoutubeHistoryStats implements IHistoryStats {
             year : "2-digit"
           };
           const formattedDate : string = `${fromDate.toLocaleDateString("en-us", dateOpts)} - ${endDate.toLocaleDateString("en-us", dateOpts)}`;
-          const dayStats: Promise<IYoutubeDayStats> = YoutubeHistoryStats.getStatForDates(statsInterval, fromDate, endDate, userId, formattedDate);
-          statsPromises.push(dayStats);
+          const dayStats: IYoutubeDayStats = await this.getStatForDates(statsInterval, fromDate, endDate, userId, formattedDate);
+          finalStats.push(dayStats);
         }
         break;
       }
@@ -159,8 +176,8 @@ export default class YoutubeHistoryStats implements IHistoryStats {
             year : "2-digit"
           };
           const formattedDate : string = `${fromDate.toLocaleDateString("en-us", dateOpts)}`;
-          const dayStats: Promise<IYoutubeDayStats> = YoutubeHistoryStats.getStatForDates(statsInterval, fromDate, endDate, userId, formattedDate);
-          statsPromises.push(dayStats);
+          const dayStats: IYoutubeDayStats = await this.getStatForDates(statsInterval, fromDate, endDate, userId, formattedDate);
+          finalStats.push(dayStats);
         }
         break;
       }
@@ -176,16 +193,33 @@ export default class YoutubeHistoryStats implements IHistoryStats {
             year : "numeric"
           };
           const formattedDate : string = `${fromDate.toLocaleDateString("en-us", dateOpts)}`;
-          const dayStats: Promise<IYoutubeDayStats> = YoutubeHistoryStats.getStatForDates(statsInterval, fromDate, endDate, userId, formattedDate);
-          statsPromises.push(dayStats);
+          const dayStats: IYoutubeDayStats = await this.getStatForDates(statsInterval, fromDate, endDate, userId, formattedDate);
+          finalStats.push(dayStats);
         }
         break;
       }
     }
 
-    let finalStats = await Promise.all(statsPromises);
-    finalStats = finalStats.filter(finalStats => !isUndefined(finalStats));
     console.log(`Stats for ${statsInterval} and date : ${date.toDateString()} are : `, finalStats);
+    finalStats = finalStats.filter(finalStats => !isUndefined(finalStats));
     return finalStats;
   }
+
+  async cacheGeneratedStats(userId : string, formattedDate : string, stats : IYoutubeDayStats) : Promise<any>{
+    
+    console.log(`Saving stats in the cache`, formattedDate, stats);
+    try {
+    } catch (error) {
+      console.log(`Some error occured in saving stats to cache : `, error);
+    }
+  }
+
+  async retrieveStatsFromCache(userId : string, formattedDate : string) {
+    formattedDate = kebabCase(formattedDate);
+    const cachedStats = await store.get(`cache.stats.${userId}.${formattedDate}`);
+    return cachedStats;
+  }
 }
+
+const youtubeHistoryStatsService = new YoutubeHistoryStatsService();
+export default youtubeHistoryStatsService;

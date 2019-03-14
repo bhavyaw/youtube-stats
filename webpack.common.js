@@ -10,7 +10,7 @@ const mainEntries = pick(originalEntriesHash, [
   'variableAccessScriptNew',
   'models',
   'activityControlsPage',
-  'youtubeHistoryItemsPage',
+  'myActivityPage',
   'YoutubeVideo'
 ]);
 

@@ -34,7 +34,7 @@ class HistoryGraphicalStats extends React.Component<Props, State> {
     const graphData = selectedIntervalHistoryStats.slice().reverse();
     const displayFields = statDisplayFields[selectedStatsInterval];
 
-    console.log(`Tabular stats render method : `, selectedIntervalHistoryStats, displayFields);
+    console.log(`Tabular stats rendering... `, selectedIntervalHistoryStats, displayFields);
     return (
       <React.Fragment>
         Graphical Stats
