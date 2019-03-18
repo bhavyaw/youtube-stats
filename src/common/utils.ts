@@ -1,18 +1,17 @@
-import { ActivePage } from '../models';
+import { ActivePage, IExtensionEventMessage, ExtensionModule } from '../models';
+import isEmpty = require('lodash/isEmpty');
 
-export function sendMessageToBackgroundScript(message: any, responseCallback?: Function, sender?: string) {
+export function sendMessageToBackgroundScript(message: any, sender: ExtensionModule, responseCallback?: Function) {
   const activeUrl: string = window.location.href;
   const activePage: ActivePage = getActivePage(activeUrl);
 
-  message = {
+  const messageToSend : any = {
     ...message,
-    activePage
+    activePage,
+    sender
   };
 
-  if (!message.sender && sender) {
-    message['sender'] = sender;
-  }
-  chrome.runtime.sendMessage(message, responseCallback);
+  chrome.runtime.sendMessage(messageToSend, responseCallback);
 }
 
 export function timeout(ms) {
@@ -25,8 +24,14 @@ export function convertUserIdToSavableForm(userId: string): string {
   return userId;
 }
 
-export function convertUserIdToOriginalForm(userId: string): string {
-  userId = userId + ".com";
+export function convertUserIdToOriginalForm(userId = ""): string {
+  if (isEmpty(userId)) {
+    return userId;
+  }
+
+  if (!userId.includes(".com")) {
+    userId = userId + ".com";
+  }
   userId = userId.replace(/_/g, ".");
   return userId;
 }
@@ -60,17 +65,29 @@ export function timeDifferenceGreaterThan(currentTime: number, pastTime: number,
 
 export function getActivePage(url: string): ActivePage {
   const urlObj: URL = new URL(url);
-  const pathName: string = urlObj.pathname;
+  const hostname : string = urlObj.hostname;
+  const pathName : string = urlObj.pathname || "";
+  const searchParams : string = urlObj.search || "";
+  const completeUrl : string = `${hostname}${pathName}${searchParams}`;
+  const activityControlsPageUrlRegex = /myaccount\.google\.com\/(u\/\d\/|intro\/)?activitycontrols(\?pageId=none)?$/i;
+  const myActivityPageRegex = /myactivity.google.com\/item/i;
+  let activePage = ActivePage.other;
 
-  if (pathName === "/") {
-    return ActivePage.home;
-  } else if (pathName === "/feed/history") {
-    return ActivePage.history;
-  } else if (pathName === "/watch") {
-    return ActivePage.video;
-  } else {
-    return ActivePage.other;
-  }
+  // https://www.youtube.com/watch?v=CkTw2-9d1rc
+
+  if (activityControlsPageUrlRegex.test(completeUrl)) {
+    activePage = ActivePage.activityControls;
+  } else if (myActivityPageRegex.test(completeUrl)) {
+    activePage = ActivePage.myActivity;
+  } else if (/(www\.)?youtube.com\/feed\/history/i.test(completeUrl)) {
+    activePage = ActivePage.history;
+  } else if (/(www\.)?youtube.com\/watch\?v=/i.test(completeUrl)) {
+    activePage = ActivePage.video;
+  } else if (/(www\.)?youtube.com\//i.test(completeUrl)) {
+    activePage = ActivePage.home;
+  } 
+  
+  return activePage;
 }
 
 export function logError(message: string, errorDetails: any, throwError?: boolean) {

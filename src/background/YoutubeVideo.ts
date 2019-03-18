@@ -104,31 +104,7 @@ export default class YoutubeVideo implements IYoutubeVideo {
         };
 
         this.watchedOnDate = null;
-    }
-
-    async saveVideoDetailsInTempStorage(userDetails : IYoutubeUser, youtubeVideo : IYoutubeVideo) {
-        const videoId = this.videoId;        
-
-        if (userDetails && userDetails.id) {
-            let storedTempVids : any = await store.get(`temp.currentVideos.${userDetails.id}`);
-            storedTempVids = storedTempVids || {};
-
-            Object.assign(storedTempVids, {
-                [videoId] : youtubeVideo
-            });
-
-            return store.set(`temp.currentVideos.${userDetails.id}`, storedTempVids);
-        }
-    }
-
-    async updateVideoDetailsInTempStorage(userDetails : IYoutubeUser, updatedVideoDetails : IYoutubeVideo) {
-        const videoId = this.videoId;        
-
-        if (userDetails && userDetails.id) {
-            return store.set(`temp.currentVideos.${userDetails.id}.${videoId}`, updatedVideoDetails)
-        }
-    }
-    
+    }    
 
     calculateTotalDurationInSeconds(totalDurationText : string) : number {
         const totalDurationTextSplit : string[] = totalDurationText.split(':');

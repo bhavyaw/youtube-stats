@@ -12,7 +12,7 @@ const appStrings: any = {
   },
   activityControlsPageNewTitle : "Activity controls YH_CE",
   myActivityPageNewTitle : "Google - My Activity YH_CE",
-  extensionUrlHash : "#yhce"
+  extensionUrlHash : "yhce"
 };
 
 Object.freeze(appStrings);

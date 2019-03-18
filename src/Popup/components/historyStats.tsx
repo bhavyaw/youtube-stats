@@ -1,7 +1,7 @@
 import * as React from 'react';
 import StatsTabularView from './tabularStats';
 import StatsGraphicalView from './graphicalStats';
-import { StatsIntervalOptions, StatsDisplayTypes, appConfig, StatsDataFetchingCases } from "config";
+import { StatsIntervalOptions, StatsDisplayTypes, StatsDataFetchingCases, ExtensionModule } from "models";
 import { convertEnumToArray, sendMessageToBackgroundScript } from 'common/utils';
 import DatePicker from "react-datepicker";
 import { storeAsync as store } from 'chrome-utils';
@@ -11,6 +11,7 @@ import "react-datepicker/dist/react-datepicker.css";
 import { APP_CONSTANTS } from 'appConstants';
 import isEmpty = require('lodash/isEmpty');
 import isArray = require('lodash/isArray');
+import { appConfig } from 'config';
  
 
 export interface Props {
@@ -170,9 +171,9 @@ class HistoryStats extends React.Component<Props, State> {
           ...data,
           loadCount: appConfig.defaultStatsLoadCount
         }
-      }, (response : IYoutubeDayStats[]) => {
+      }, ExtensionModule.Popup, (response : IYoutubeDayStats[]) => {
         resolve(response);
-      }, APP_CONSTANTS.SENDER.POPUP);
+      });
     });
   }
 

@@ -1,3 +1,7 @@
+export type stringOrArr = string | Array<string>;
+export type chromeStorage = chrome.storage.LocalStorageArea | chrome.storage.SyncStorageArea;
+export type storeType = "local" | "sync";
+
 export enum ActivePage {
     home = "home",
     history = "history",
@@ -7,7 +11,44 @@ export enum ActivePage {
     other = "other"
 }
 
-export enum IRoutingType { FROM_OUTSIDE_YOUTUBE, FROM_WITHIN_YOUTUBE, NOT_YOUTUBE_PAGE }
+export enum RefreshIntervals {
+    Daily = 1,
+    Weekly = 7,
+    BiWeekly = 14,
+    Monthly = 30,
+  }
+  
+  export enum StatsIntervalOptions {
+    Daily = 1,
+    Weekly = 7,
+    Monthly = 30,
+    Yearly = 365
+  };
+  
+  export enum StatsDisplayTypes {
+    Table = 0,
+    Graph = 1
+  };
+  
+  export enum StatsDataFetchingCases {
+    date = 0,
+    interval = 1,
+    user = 2,
+    loadMore = 3
+  }
+
+export enum ExtensionModule {
+    Popup,
+    ContentScript,
+    Background,
+    VariableAccessScript
+}
+
+export enum IRoutingType { 
+    FROM_OUTSIDE_YOUTUBE, 
+    FROM_WITHIN_YOUTUBE, 
+    NOT_YOUTUBE_PAGE
+}
 
 export interface IRoute {
     currentActivePage: ActivePage,
@@ -32,7 +73,7 @@ export interface IExtensionEventMessage {
     userId?: string,
     route?: IRoute,
     receiver?: string,
-    sender?: string,
+    sender: ExtensionModule,
     error_msg?: string
 }
 

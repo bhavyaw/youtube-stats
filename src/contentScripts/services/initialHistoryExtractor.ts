@@ -1,8 +1,8 @@
 import YoutubeVideo from 'background/YoutubeVideo';
-import { sendMessageToBackgroundScript, convertUserIdToSavableForm } from 'common/utils';
+import { sendMessageToBackgroundScript } from 'common/utils';
 import { APP_CONSTANTS } from 'appConstants';
 import { loadExternalDataFetchingScript, sendMessageToVariableAccessScript } from './variableScriptCommunicator';
-import { IYoutubeVideo, INewInitialHistoryData } from 'models';
+import { IYoutubeVideo, INewInitialHistoryData, ExtensionModule } from 'models';
 import ContinuationDataService from "./continuationDataFetcher";
 import isEmpty = require('lodash/isEmpty');
 
@@ -23,12 +23,12 @@ export async function startDataExtractionProcess(lastSavedVideoDetails: IYoutube
     await loadExternalDataFetchingScript('/js/variableAccessScriptNew.js', variableAccessSriptMessageHandler);
     sendMessageToVariableAccessScript({
       type: APP_CONSTANTS.DATA_EXCHANGE_TYPE.GET_INITIAL_YOUTUBE_HISTORY_DATA
-    });
+    }, ExtensionModule.ContentScript);
   } else {
     sendMessageToBackgroundScript({
       type: APP_CONSTANTS.DATA_EXCHANGE_TYPE.ERROR,
       error_msg: "Unable to find script element that contains initial data"
-    });
+    }, ExtensionModule.ContentScript);
   }
 }
 
@@ -50,13 +50,12 @@ function variableAccessSriptMessageHandler(message) {
   if (type === APP_CONSTANTS.DATA_EXCHANGE_TYPE.INITIAL_YOUTUBE_HISTORY_DATA) {
     saveInitialHistoryData(message);
   } else if (type === APP_CONSTANTS.DATA_EXCHANGE_TYPE.ERROR) {
-    sendMessageToBackgroundScript(message);
+    sendMessageToBackgroundScript(message, ExtensionModule.ContentScript);
   }
 }
 
 async function saveInitialHistoryData(message) {
   let { data, userId } = message;
-  userId = convertUserIdToSavableForm(userId);
   let { newlyWatchedVideos = [], continuationDataFetchingParam }: INewInitialHistoryData = data;
   console.log("inside saving initial history data : ", message, lastSavedVideo);
 
@@ -76,7 +75,7 @@ async function saveInitialHistoryData(message) {
         continuationDataFetchingParam
       },
       userId
-    });
+    }, ExtensionModule.ContentScript);
   }
   lastSavedVideo = null;
 }

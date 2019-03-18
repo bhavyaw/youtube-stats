@@ -30,13 +30,13 @@ export const APP_CONSTANTS = {
         USER_ID: "USER_ID",
         HISTORY_DATA_UPDATED: "HISTORY_DATA_UPDATED",
         FETCH_STATS_FOR_INTERVAL: "FETCH_STATS_FOR_INTERVAL",
+        OTHER_USERS : "OTHER_USERS",
+        // for testing purposes
+        GET_YOUTUBE_HISTORY_PAGE_INITIAL_DATA : "GET_YOUTUBE_HISTORY_PAGE_INITIAL_DATA",
+        YOUTUBE_HISTORY_PAGE_INITIAL_DATA : "YOUTUBE_HISTORY_PAGE_INITIAL_DATA",
+        VARIABLE_ACCESS_ERROR : "VARIABLE_ACCESS_ERROR"
     },
     RECEIVER: {
-        POPUP: "POPUP",
-        CONTENT_SCRIPT: "CONTENT_SCRIPT",
-        BACKGROUND: "BACKGROUND"
-    },
-    SENDER: {
         POPUP: "POPUP",
         CONTENT_SCRIPT: "CONTENT_SCRIPT",
         BACKGROUND: "BACKGROUND"
@@ -46,7 +46,8 @@ export const APP_CONSTANTS = {
 };
 
 export const DATA_FETCHING_URLS = {
-    CONTINUATION: "/item?restrict=ytw&hl=en-GB&jspb=1"
+    CONTINUATION: "/item?restrict=ytw&hl=en-GB&jspb=1",
+    YOUTUBE_HISTORY_CONTINUATION : "/browse_ajax"
 };
 Object.freeze(APP_CONSTANTS);
 Object.freeze(DATA_FETCHING_URLS);

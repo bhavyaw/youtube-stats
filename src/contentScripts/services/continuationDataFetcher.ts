@@ -1,12 +1,11 @@
 import YoutubeVideo from 'background/YoutubeVideo';
 import appGlobals from 'globals';
-import { INewInitialHistoryData, IExtensionEventMessage, ActivePage } from 'models';
+import { IExtensionEventMessage, ActivePage } from 'models';
 import  axios, {AxiosRequestConfig} from 'axios';
 import { DATA_FETCHING_URLS } from 'appConstants';
 import {APP_CONSTANTS} from "appConstants";
 import { getActivePage } from 'common/utils';
 import isEmpty = require('lodash/isEmpty');
-import isUndefined = require('lodash/isUndefined');
 import isNil = require('lodash/isNil');
 
 class ContinuationDataService {
@@ -48,7 +47,7 @@ class ContinuationDataService {
       const newContinuationParams : string = responseData[1];
 
       if (isNil(newlyWatchedVideos)) {
-        alert("Newly watched videos missing from the response :    " + newlyWatchedVideos + "  " + newContinuationParams);
+        console.log("Newly watched videos missing from the response :    " + newlyWatchedVideos + "  " + newContinuationParams);
         message = {
           type : APP_CONSTANTS.DATA_EXCHANGE_TYPE.CONTINUATION_DATA,
           data : {

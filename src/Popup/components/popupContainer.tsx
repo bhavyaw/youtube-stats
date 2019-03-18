@@ -2,7 +2,7 @@ import * as React from 'react';
 import PopUpHeader from './PopupRefresh';
 import { storeAsync as store } from 'chrome-utils';
 import { convertUserIdToOriginalForm, sendMessageToBackgroundScript } from 'common/utils';
-import { IExtensionEventMessage } from 'models';
+import { IExtensionEventMessage, ExtensionModule } from 'models';
 import { APP_CONSTANTS } from 'appConstants';
 import { appConfig } from "config";
 import RefreshInterval from './refreshIntervals';
@@ -39,7 +39,7 @@ class PopupContainer extends React.Component<Props, State> {
 
   async checkForHistoryDataUpdates() {
     chrome.runtime.onMessage.addListener((message: IExtensionEventMessage) => {
-      if (message.sender === APP_CONSTANTS.SENDER.BACKGROUND) {
+      if (message.sender === ExtensionModule.Background) {
         console.log("Message received from background script : ", message);
 
         const messageType = message.type;
@@ -114,7 +114,7 @@ class PopupContainer extends React.Component<Props, State> {
     sendMessageToBackgroundScript({
       type: APP_CONSTANTS.PROCESSES.MANUAL_RUN_REFRESH_CYCLE,
       userId : selectedUser
-    }, null, APP_CONSTANTS.SENDER.POPUP);
+    }, ExtensionModule.Popup);
   }
 
   updateRefreshInterval = async (newRefreshIntervalValue) => {
@@ -124,22 +124,29 @@ class PopupContainer extends React.Component<Props, State> {
       data: {
         newRefreshInterval: newRefreshIntervalValue
       }
-    }, (response) => {
+    }, ExtensionModule.Popup, (response) => {
       console.log(`Post refresh interval updated!!!`, response);
       this.setState({
         activeRefreshInterval: newRefreshIntervalValue
       });
-    }, APP_CONSTANTS.SENDER.POPUP);
+    });
   }
 
   // util
   getFormattedLastRunTime(lastRunTime: string) {
     const lastRunDate: Date = new Date(lastRunTime);
-    let formattedTime: string = lastRunDate.toTimeString();
-    let formattedDate: string = lastRunDate.toDateString();
-    formattedTime = formattedTime.split(" ")[0];
-
-    return `${formattedTime}, ${formattedDate}`;
+    const formattedDate : string = lastRunDate.toLocaleDateString("en-us", {
+      hour12 : true,
+      hour : "numeric",
+      minute : "numeric",
+      weekday : "short",
+      day : "numeric",
+      month : "short"
+    });
+    // let formattedTime: string = lastRunDate.toTimeString();
+    // let formattedDate: string = lastRunDate.toDateString();
+    // formattedTime = formattedTime.split(" ")[0];
+    return formattedDate;
   }
 
   async getHistoryDataForUser(userId): Promise<any> {

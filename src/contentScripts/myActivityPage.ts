@@ -1,7 +1,7 @@
 import appStrings from 'appStrings';
-import { sendMessageToBackgroundScript, convertUserIdToSavableForm } from 'common/utils';
+import { sendMessageToBackgroundScript, getActivePage } from 'common/utils';
 import { APP_CONSTANTS } from "appConstants";
-import { IExtensionEventMessage, IYoutubeVideo } from "models";
+import { IExtensionEventMessage, IYoutubeVideo, ActivePage, ExtensionModule } from "models";
 import { startDataExtractionProcess } from "contentScripts/services/initialHistoryExtractor";
 import { loadExternalDataFetchingScript, sendMessageToVariableAccessScript } from "./services/variableScriptCommunicator";
 import set = require('lodash/set');
@@ -19,7 +19,7 @@ function startContentScript() {
 
 function windowOnloadHandler() {
   console.log(`Youtube History item page loaded...`);
-  sendUserIdToBackgroundScript();
+  extractUserID();
 }
 
 function extensionMessageListener() {
@@ -51,31 +51,93 @@ async function handleMessageFromBackgroundScript(messages: IExtensionEventMessag
   }
 }
 
-async function sendUserIdToBackgroundScript() {
+async function extractUserID() {
   console.log("inside extract user Id");
   await loadExternalDataFetchingScript('/js/variableAccessScriptNew.js', (variableAccessSriptMessageHandler));
   console.log("inside start data extraction process...post wait for external script load and also some other work");
+  const activeUrl : string = window.location.href;
+  const activePage : ActivePage = getActivePage(activeUrl);
   sendMessageToVariableAccessScript({
-    type: APP_CONSTANTS.DATA_EXCHANGE_TYPE.GET_USER_ID
-  });
+    type: APP_CONSTANTS.DATA_EXCHANGE_TYPE.GET_USER_ID,
+    activePage
+  }, ExtensionModule.ContentScript);
 }
 
-function variableAccessSriptMessageHandler(message) {
-  const type = message.type;
+function variableAccessSriptMessageHandler(message : IExtensionEventMessage) {
+  const {type, sender} = message;
   console.log("Message received from variable access script : ", message);
 
-  if (type === APP_CONSTANTS.DATA_EXCHANGE_TYPE.USER_ID) {
-    console.log("User Id received from variable access script. Sending it to background script", message.userId);
-    let { data, userId } = message;
-    userId = convertUserIdToSavableForm(userId);
+  if (sender === ExtensionModule.VariableAccessScript) {
+    if (type === APP_CONSTANTS.DATA_EXCHANGE_TYPE.USER_ID) {
+      postUserIdRetrivalFromVarAccessScript(message);
+    }
+  } 
+}
+
+function postUserIdRetrivalFromVarAccessScript(message : IExtensionEventMessage) {
+  console.log("User Id received from variable access script. Sending it to background script", message.userId);
+  let { data, userId } = message;
+  const {
+    isActiveUserLoggedIn, 
+    activeUserInPopup
+  } = checkIfCorrectUserIsLoggedIn(userId);
+
+  if (isActiveUserLoggedIn) {
     const { appVersion } = data;
 
     set(appGlobals, "appVersion", appVersion);
     set(appGlobals, "userId", userId);
-
+  
     sendMessageToBackgroundScript({
       type: APP_CONSTANTS.DATA_EXCHANGE_TYPE.USER_ID,
       userId
-    });
+    }, ExtensionModule.ContentScript);
+  } else {  
+    logInToActiveUserAccount(activeUserInPopup);
   }
+}
+
+function checkIfCorrectUserIsLoggedIn(loggedInUser : string) {
+  const pageUrl : string = location.href;
+  const decodedUrl : string = decodeURIComponent(pageUrl);
+  const urlObj : URL = new URL(decodedUrl);
+  const hash : string = urlObj.hash;
+  let isActiveUserLoggedIn : boolean = true;
+  let activeUserInPopup : string = "";
+
+  if (hash) {
+    const hashParts : string[] = hash.split("/");
+    const encodedActiveUserInPopup : string = hashParts[1];
+    activeUserInPopup = atob(encodedActiveUserInPopup);
+    isActiveUserLoggedIn = (activeUserInPopup === loggedInUser);
+
+    return {
+      isActiveUserLoggedIn, 
+      activeUserInPopup
+    }
+  } else {
+    return {
+      isActiveUserLoggedIn,
+      activeUserInPopup
+    };
+  }
+}
+
+function logInToActiveUserAccount(activeUserInPopup : string) {
+  // TODO : move the selector in the constants file
+  let userLoginDivs : any = document.querySelectorAll(`a .gb_Fb`);
+  userLoginDivs = Array.from(userLoginDivs);
+  let activeUserLoginDiv : HTMLDivElement = userLoginDivs.filter(userLoginDiv => {
+    return userLoginDiv.textContent.includes(activeUserInPopup);
+  });
+
+  if (!activeUserLoginDiv) {
+    throw new Error("Unable to find the active user login div");
+  }
+
+  activeUserLoginDiv = activeUserLoginDiv[0];
+  console.log("Active user login div : ", activeUserLoginDiv);
+
+  let activeUserLoginDivParent : HTMLAnchorElement = activeUserLoginDiv.closest("a");
+  activeUserLoginDivParent.click();  
 }

@@ -8,9 +8,11 @@ const {
 
 const mainEntries = pick(originalEntriesHash, [
   'variableAccessScriptNew',
+  'youtubeHistoryPageVariableAccessor',
   'models',
   'activityControlsPage',
   'myActivityPage',
+  'youtubeHistoryPage',
   'YoutubeVideo'
 ]);
 

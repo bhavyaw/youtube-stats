@@ -4,7 +4,7 @@ import { storeAsync as store } from 'chrome-utils';
 import { formatDate } from './utils';
 import {convertDurationToProperFormat} from 'common/utils';
 import isString = require('lodash/isString');
-import { StatsIntervalOptions } from 'config';
+import { StatsIntervalOptions } from 'models';
 import isUndefined = require('lodash/isUndefined');
 import isEmpty = require('lodash/isEmpty');
 import { kebabCase, cloneDeep, clone } from 'lodash';

@@ -17,12 +17,16 @@
     },
     "content_security_policy": "script-src 'self' 'unsafe-eval'; object-src 'self'",
     "content_scripts": [{
-            "matches": ["https://myaccount.google.com/activitycontrols", "https://myaccount.google.com/intro/activitycontrols"],
+            "matches": ["https://myaccount.google.com/*activitycontrols*"],
             "js": ["./js/vendor.js", "./js/activityControlsPage.js"]
         },
         {
             "matches": ["https://myactivity.google.com/item*"],
             "js": ["./js/vendor.js", "./js/myActivityPage.js"]
+        },
+        {
+            "matches": ["https://www.youtube.com/feed/history"],
+            "js": ["./js/vendor.js", "./js/youtubeHistoryPage.js"]
         }
     ],
 
@@ -32,7 +36,8 @@
     },
 
     "web_accessible_resources": [
-        "js/variableAccessScriptNew.js"
+        "js/variableAccessScriptNew.js",
+        "js/youtubeHistoryPageVariableAccessor.js"
     ],
 
     "permissions": [

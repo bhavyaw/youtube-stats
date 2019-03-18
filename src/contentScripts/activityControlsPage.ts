@@ -1,13 +1,14 @@
-import { IExtensionEventMessage } from "models";
+import { IExtensionEventMessage, ActivePage, ExtensionModule } from "models";
 import { APP_CONSTANTS } from "appConstants";
-import { sendMessageToBackgroundScript, convertUserIdToSavableForm, convertUserIdToOriginalForm } from "common/utils";
+import { sendMessageToBackgroundScript, convertUserIdToOriginalForm, getActivePage } from "common/utils";
 import { delegate } from 'receptor';
 import appStrings from "appStrings";
 import { loadExternalDataFetchingScript, sendMessageToVariableAccessScript } from "./services/variableScriptCommunicator";
+import isEmpty = require("lodash/isEmpty");
 
 
 console.log("inside activity controls page content script!!!");
-let activeUserIdInPopup :string = "";
+let activeUserInPopup : string = "";
 startContentScript();
 
 function startContentScript() {
@@ -29,19 +30,18 @@ async function handleMessageFromBackgroundScript(messages: IExtensionEventMessag
 
         case APP_CONSTANTS.PROCESSES.RUN_PRE_REFRESH_CHECKS:
           console.log(`Run prerefreshcheck message received from the background - opening myactivity page`);
-          activeUserIdInPopup = userId;
-          runPreRefreshCycleChecks(activeUserIdInPopup);
+          activeUserInPopup = convertUserIdToOriginalForm(userId);
+          runPreRefreshCycleChecks(activeUserInPopup);
           break;
       }
     });
   }
 }
 
-function runPreRefreshCycleChecks(activeUserIdInPopup) {
-  document.title = appStrings.activityControlsPageNewTitle;
+function runPreRefreshCycleChecks(activeUserInPopup) {
+  location.hash = appStrings.extensionUrlHash;
   console.log("inside run pre refresh cycle checks...");
   const urlPathname: string = location.pathname;
-
 
   if (urlPathname.includes("intro")) {
     console.log(`user is not logged in`);
@@ -49,19 +49,45 @@ function runPreRefreshCycleChecks(activeUserIdInPopup) {
 
     sendMessageToBackgroundScript({
       type: APP_CONSTANTS.PROCESSES.HIGHLIGHT_TAB
-    });
-    // TODO : show desktop notification here
-    alert("User is Logged out. In order for the Youtube history chrome extension to work properly, user needs to logged in to their google account. Please log into your google account.")
+    }, ExtensionModule.ContentScript);
+
+    setTimeout(() => {
+      sendMessageToBackgroundScript({
+        type : APP_CONSTANTS.PROCESSES.SHOW_DESKTOP_NOTIFICATION,
+        data : {
+          message : `User is Logged out. In order for the Youtube history chrome extension to work properly, user needs to logged in to their google account. Please log into your google account.`,
+          title : `Alert`
+        }
+      }, ExtensionModule.ContentScript);
+    }, 1000);
     return;
   } 
-
-  // checking if the desired user is logged in or not
-  if (activeUserIdInPopup) {
+  
+  extractAndSaveOtherUsers();
+  if (activeUserInPopup) {
     extractUserId();
-  } else{
-    // Checking whether the history settings are enabled or not    
+  } else {
     checkIfHistorySettingsAreEnabled();
-  }  
+  }
+}
+
+function extractAndSaveOtherUsers() {
+  const userLoginDivElems : NodeListOf<HTMLDivElement> = document.querySelectorAll(`a .gb_Fb`);
+  const userLoginDivElemsArr : Array<HTMLDivElement> = Array.from(userLoginDivElems);
+
+  let otherUserIds : Array<string> = userLoginDivElemsArr.map(userLoginDivElem => (userLoginDivElem.textContent || "").trim());
+  otherUserIds = otherUserIds.map(userId => (userId.includes("default") ? userId.replace(" (default)", "") : userId));
+  
+  if (!isEmpty(otherUserIds)) {
+    console.log(`Extracted other users:  `, otherUserIds);
+    const message : any = {
+      type : APP_CONSTANTS.DATA_EXCHANGE_TYPE.OTHER_USERS,
+      data : {
+        users : otherUserIds
+      }
+    }
+    sendMessageToBackgroundScript(message, ExtensionModule.ContentScript);
+  }
 }
 
 function getYoutubeWatchHistorySetting(): boolean {
@@ -87,39 +113,66 @@ function listenToHistorySettingChanges(): void {
   )
 }
 
-function initiateRefreshCycle() {
+function checkIfHistorySettingsAreEnabled(activeUserInPopup ?: string) {
+  console.log(`user is logged in`);
+  const youtubeWatchHistoryEnabled: boolean = getYoutubeWatchHistorySetting();
+
+  if (youtubeWatchHistoryEnabled) {
+    console.log(`Youtube watch history is enabled...`);
+    initiateRefreshCycle(activeUserInPopup);
+  } else {
+    console.log(`Youtube watch history is not enabled`);
+    sendMessageToBackgroundScript({
+      type: APP_CONSTANTS.PROCESSES.HIGHLIGHT_TAB
+    }, ExtensionModule.ContentScript);
+    
+    sendMessageToBackgroundScript({
+      type : APP_CONSTANTS.PROCESSES.SHOW_DESKTOP_NOTIFICATION,
+      data : {
+        message : "Kindly enable youtube watch history. Without which youtube watch history extension cannot work properly",
+        title : ``
+      }
+    }, ExtensionModule.ContentScript);
+    listenToHistorySettingChanges();
+  }
+}
+
+function initiateRefreshCycle(activeUserInPopup = "") {
+  let shaConvertedActiveUserId : string = "";
+  if (activeUserInPopup) {
+    shaConvertedActiveUserId = btoa((activeUserInPopup));
+  }
+
   // Hide any alert messages 
   console.log("### -> Initiating refresh cycle");
   console.log(`Activity controller content script : redirecting to myactivity page. Initiated by the background script...`);
-  sendMessageToBackgroundScript({
-    type : APP_CONSTANTS.PROCESSES.SHOW_DESKTOP_NOTIFICATION,
-    data : {
-      message : `Activity Controller content script : Redirecting to myActivity Page - Initiated by background script via runRefreshCycle`,
-      title : `Testing Alert`
-    }
-  }, null, APP_CONSTANTS.SENDER.CONTENT_SCRIPT);
-  location.href = "https://myactivity.google.com/item?restrict=ytw&hl=en-GB";
+  location.href = `https://myactivity.google.com/item?restrict=ytw&hl=en-GB#${appStrings.extensionUrlHash}/${shaConvertedActiveUserId}`;
 }
 
 async function extractUserId() {
   console.log("inside extract user Id");
   await loadExternalDataFetchingScript('/js/variableAccessScriptNew.js', (variableAccessSriptMessageHandler));
   console.log("inside start data extraction process...post wait for external script load and also some other work");
+  const activeUrl : string = window.location.href;
+  const activePage : ActivePage = getActivePage(activeUrl);
+  
   sendMessageToVariableAccessScript({
     type: APP_CONSTANTS.DATA_EXCHANGE_TYPE.GET_USER_ID,
-  });
+    activePage
+  }, ExtensionModule.ContentScript);
 }
 
 function variableAccessSriptMessageHandler(message) {
-  const type = message.type;
+  const {type, sender} = message;
   console.log("Message received from variable access script : ", message);
 
-  if (type === APP_CONSTANTS.DATA_EXCHANGE_TYPE.USER_ID) {
-    console.log("User Id received from variable access script. Sending it to background script", message.userId);
-    let { loggedInUser } = message;
-    loggedInUser = convertUserIdToSavableForm(loggedInUser);
-    compareUsers(loggedInUser)
-  }
+  if (sender === ExtensionModule.VariableAccessScript) {
+    if (type === APP_CONSTANTS.DATA_EXCHANGE_TYPE.USER_ID) {
+      console.log("User Id received from variable access script. Sending it to background script", message.userId);
+      let { userId : loggedInUser = ""} = message;
+      compareUsers(loggedInUser)
+    }
+  } 
 }
 
 function compareUsers(loggedInUser : string) {
@@ -127,61 +180,46 @@ function compareUsers(loggedInUser : string) {
     throw new Error("Unable to find the logged in user details");
   }
 
-  if (loggedInUser !== activeUserIdInPopup) {
-    console.log(`Logged in User and Active User in differ. Logged In User : ${loggedInUser}, User Active in Popup : ${activeUserIdInPopup}`);
+  if (loggedInUser !== activeUserInPopup) {
+    console.log(`Logged in User and Active User in differ. Logged In User : ${loggedInUser}, User Active in Popup : ${activeUserInPopup}`);
     // login into the desired account
-    logInToActiveUserAccount(activeUserIdInPopup);  
+    logInToActiveUserAccount(activeUserInPopup);  
   } else {
-    checkIfHistorySettingsAreEnabled();
+    checkIfHistorySettingsAreEnabled(activeUserInPopup);
   }
 }
 
-function checkIfHistorySettingsAreEnabled() {
-  console.log(`user is logged in`);
-  const youtubeWatchHistoryEnabled: boolean = getYoutubeWatchHistorySetting();
-
-  if (youtubeWatchHistoryEnabled) {
-    console.log(`Youtube watch history is enabled...`);
-    initiateRefreshCycle();
-  } else {
-    console.log(`Youtube watch history is not enabled`);
-    sendMessageToBackgroundScript({
-      type: APP_CONSTANTS.PROCESSES.HIGHLIGHT_TAB
-    });
-    alert("Kindly enable youtube watch history. Without which youtube watch history extension cannot work properly");
-    listenToHistorySettingChanges();
-  }
-}
-
-function logInToActiveUserAccount(activeUserIdInPopup : string) {
-  const readableActiveUserIdInPopup : string = convertUserIdToOriginalForm(activeUserIdInPopup);
-  let userLoginDivs : any = document.querySelectorAll(`.gb_Fb[dir="ltr"]`);
+function logInToActiveUserAccount(activeUserInPopup : string) {
+  // TODO : move the selector in the constants file
+  let userLoginDivs : any = document.querySelectorAll(`a .gb_Fb`);
   userLoginDivs = Array.from(userLoginDivs);
   let activeUserLoginDiv : HTMLDivElement = userLoginDivs.filter(userLoginDiv => {
-    return userLoginDiv.textContent.includes(activeUserIdInPopup);
+    return userLoginDiv.textContent.includes(activeUserInPopup);
   });
 
-  if (!activeUserLoginDiv) {
+  activeUserLoginDiv = activeUserLoginDiv[0];
+  if (isEmpty(activeUserLoginDiv)) {
     throw new Error("Unable to find the active user login div");
   }
+  console.log("Active user login div : ", activeUserLoginDiv);
 
   let activeUserLoginDivParent : HTMLAnchorElement = activeUserLoginDiv.closest("a");
-  let isActiveUserLoggedIn : Boolean = (activeUserLoginDivParent.children.length > 2) || Boolean(activeUserLoginDivParent.querySelector(".gb_xb"));
+  let isActiveUserNotLoggedIn : Boolean = (activeUserLoginDivParent.children.length > 2) || Boolean(activeUserLoginDivParent.querySelector(".gb_xb"));
   
-  if (isActiveUserLoggedIn) {
+  if (!isActiveUserNotLoggedIn) {
     activeUserLoginDivParent.click();  
   } else {
     sendMessageToBackgroundScript({
       type: APP_CONSTANTS.PROCESSES.HIGHLIGHT_TAB
-    });
+    }, ExtensionModule.ContentScript);
     setTimeout(() => {
       sendMessageToBackgroundScript({
         type : APP_CONSTANTS.PROCESSES.SHOW_DESKTOP_NOTIFICATION,
         data : {
-          message : `The user for which we need to extract the data ( or run refresh cycle) is not logged in. Kindly log in with user ${readableActiveUserIdInPopup}`,
+          message : `The user for which we need to extract the data ( or run refresh cycle) is not logged in. Kindly log in with user ${activeUserInPopup}`,
           title : `Youtube Stats Chrome Extension`
         }
-      }, null, APP_CONSTANTS.SENDER.CONTENT_SCRIPT);
+      }, ExtensionModule.ContentScript);
       setTimeout(() => {
         activeUserLoginDivParent.click();         
       }, 2000);

@@ -1,3 +1,4 @@
+import { ExtensionModule } from './../../models';
 import { IExtensionEventMessage } from "models";
 
 const variableScriptListeners = [];
@@ -50,9 +51,12 @@ async function injectVariableAccessScript(filePath, headNode : HTMLElement) : Pr
     }); 
 }
 
-export function sendMessageToVariableAccessScript(message : IExtensionEventMessage, windowNode ?: Window) {
+export function sendMessageToVariableAccessScript(message : any, sender : ExtensionModule, windowNode ?: Window) {
+    const messageToSend : IExtensionEventMessage = {
+        ...message,
+        sender
+    };
     const targetUrl = location.protocol + "//" + location.hostname;
     windowNode = windowNode || window;
-    console.log(`Sending Message to variable access script...: `, targetUrl);    
-    windowNode.postMessage(message, targetUrl);
+    windowNode.postMessage(messageToSend, targetUrl);
 }

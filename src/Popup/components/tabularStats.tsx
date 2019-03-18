@@ -2,7 +2,7 @@ import * as React from 'react';
 import { IHistoryStats, IYoutubeDayStats } from 'models';
 import appStrings from 'appStrings';
 import isEmpty = require('lodash/isEmpty');
-import { statDisplayFields, StatsIntervalOptions } from 'config';
+import { statDisplayFields } from 'config';
 import isArray = require('lodash/isArray');
 import { APP_CONSTANTS } from 'appConstants';
 

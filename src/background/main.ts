@@ -1,16 +1,17 @@
-import { IExtensionEventMessage, INewInitialHistoryData, IYoutubeVideo } from 'models';
+import { IExtensionEventMessage, INewInitialHistoryData, IYoutubeVideo, ExtensionModule, StatsIntervalOptions } from 'models';
 import { APP_CONSTANTS } from 'appConstants';
 import { storeAsync as store } from 'chrome-utils';
 import YoutubeHistory from './YoutubeHistory';
-import { appConfig, StatsIntervalOptions } from 'config';
+import { appConfig } from 'config';
 
 import isNil = require("lodash/isNil");
 import isEmpty = require('lodash/isEmpty');
 import isDate = require("lodash/isDate");
-import { isNumber } from 'lodash';
+import { isNumber, uniq } from 'lodash';
 import YoutubeHistoryStats from './services/YoutubeHistoryStats';
 import { showDesktopNotification } from 'common/utils';
 import appStrings from 'appStrings';
+import baseModel from 'models/BaseModel';
 
 // background js globals
 let stopFetchingContinuationData = false;
@@ -25,22 +26,21 @@ initializeBackgroundScript();
 const storeRemove = store.remove;
 
 function initializeBackgroundScript() {
-  console.log("Initializing Background script...", store, storeRemove);
+  console.log("Initializing Background script...", store, storeRemove, baseModel);
   // browser start event 
   // TODO : enable this in production
-  chrome.runtime.onStartup.addListener(async () => {
-    showDesktopNotification(`Keep the background script devtools open to track random running of the script`);
-  });
+  // chrome.runtime.onStartup.addListener(async () => {
+  // });
 
   handleBrowserStartEvent();
 }
 
 function handleBrowserStartEvent() {
-  showDesktopNotification(`Browser has started!!!`);
+  // showDesktopNotification(`Browser has started!!!`);
   intiateRefreshCycle();
   listenToTabEvents();
   chrome.runtime.onMessage.addListener(function (message: IExtensionEventMessage, sender: any, sendResponseFunc: Function) {
-    if (message.sender === APP_CONSTANTS.SENDER.POPUP) {
+    if (message.sender === ExtensionModule.Background) {
       (handleMessagesFromPopupScript as any)(...arguments);
     } else {
       (handleMessagesFromContentScript as any)(...arguments);
@@ -55,7 +55,7 @@ function runRefreshCycle() {
     return;
   }
 
-  showDesktopNotification(`Running Refresh Cycle | Opening activity control tab`, "Testing Notification");
+  // showDesktopNotification(`Running Refresh Cycle | Opening activity control tab`, "Testing Notification");
   chrome.tabs.create({
     active: false,
     pinned: true,
@@ -67,7 +67,7 @@ function runRefreshCycle() {
 }
 
 function listenToTabEvents() {
-  const activityControlsPageUrlRegex = /myaccount\.google\.com\/(intro\/)?activitycontrols$/i;
+  const activityControlsPageUrlRegex = /myaccount\.google\.com\/(u\/\d\/|intro\/)?activitycontrols$/i;
   const myActivityPageRegex = /myactivity.google.com\/item/i;
 
   chrome.tabs.onUpdated.addListener((tabId: number, info: any, tab: any) => {
@@ -77,7 +77,7 @@ function listenToTabEvents() {
       const completeUrl: string = url.host + url.pathname;
       const urlHash : string = url.hash;
 
-      if (activityControlsPageUrlRegex.test(completeUrl) && tab.title === `Activity controls`) {
+      if (activityControlsPageUrlRegex.test(completeUrl)) {
         console.log("Activity controls tab opened via extension programmatically");
         if (tab.id === activityControlsTabId) {
           runPreRefreshCycleChecks(tab);
@@ -87,7 +87,7 @@ function listenToTabEvents() {
         }
       } 
 
-      if (myActivityPageRegex.test(completeUrl) && tab.id !== activityControlsTabId && urlHash === appStrings.extensionUrlHash) {
+      if (myActivityPageRegex.test(completeUrl) && tab.id !== activityControlsTabId && urlHash.includes(appStrings.extensionUrlHash)) {
         console.log(`MyActivity tab opened by extension`, tab);
         // delete stale extraction tabs
         chrome.tabs.remove(tab.id);
@@ -112,6 +112,12 @@ async function handleMessagesFromContentScript(message: IExtensionEventMessage, 
     const userId: string = message.userId;
 
     switch (messageType) {
+      case APP_CONSTANTS.DATA_EXCHANGE_TYPE.OTHER_USERS : 
+        const {users} : {users : Array<string>} = data;
+        console.log(`Received other users from activity controls pages`, users);
+        saveOtherUsers(users);
+      break;
+
       case APP_CONSTANTS.PROCESSES.HIGHLIGHT_TAB:
         console.log("Handle user logged out...", sender);
         chrome.tabs.update(tabId, {
@@ -155,6 +161,17 @@ async function handleMessagesFromContentScript(message: IExtensionEventMessage, 
         const {message, title} = data;
         showDesktopNotification(message, title);
     }
+  }
+}
+
+async function saveOtherUsers(users : Array<string>) {
+  const existingUsers = await store.get("users") || [];
+  let newUsersToStore : Array<string> = uniq(existingUsers.concat(users));
+  console.log("Existing users : %o, New Extracted Users : %o, New users to save : %o",existingUsers, users, newUsersToStore);
+
+  if (existingUsers.length !== newUsersToStore.length) {
+    console.log("Saving new users in store : ", newUsersToStore);
+    await store.set("users", newUsersToStore);
   }
 }
 
@@ -227,6 +244,7 @@ function runPreRefreshCycleChecks(activeTab: chrome.tabs.Tab) {
   if (activeTab.id === activityControlsTabId) {
     const message: IExtensionEventMessage = {
       type: APP_CONSTANTS.PROCESSES.RUN_PRE_REFRESH_CHECKS,
+      sender : ExtensionModule.Background
     };
 
     if (!isEmpty(newSelectedUserInPopup)) {
@@ -242,7 +260,7 @@ function runPreRefreshCycleChecks(activeTab: chrome.tabs.Tab) {
 async function updateRefreshInterval(newRefreshInterval: number, sendResponseFunc) {
   if (newRefreshInterval && isNumber(newRefreshInterval)) {
     try {
-      await store.set(`refreshInterval`, newRefreshInterval);
+      await store.set(`activeRefeshInterval`, newRefreshInterval);
       const refreshIntervalUpdateTime: Date = new Date();
       const refreshIntervalUpdateTimeString: string = refreshIntervalUpdateTime.toISOString();
       await store.set(`activeIntervalChangeDate`, refreshIntervalUpdateTimeString);
@@ -290,7 +308,7 @@ async function fetchContinuationData(activeTabId: number, userId: string, contin
     throw new Error(`Inside fetch continuation data, userId is null ${userId}`);
   }
 
-  const message: IExtensionEventMessage = {
+  const message : any = {
     type: APP_CONSTANTS.DATA_EXCHANGE_TYPE.GET_CONTINUATION_DATA,
     data: {
       continuationDataFetchingParam
@@ -325,8 +343,12 @@ async function saveContinuationData(activeTabId: any, continuationData: INewInit
   }
 }
 
-function sendMessageToActiveTab(preferableTabId: number, message: IExtensionEventMessage) {
-  messageQueue.add(message);
+function sendMessageToActiveTab(preferableTabId: number, message) {
+  const messageToSend : IExtensionEventMessage = {
+    ...message,
+    sender : ExtensionModule.Background
+  };
+  messageQueue.add(messageToSend);
 
   chrome.tabs.get(preferableTabId, (preferableTab: chrome.tabs.Tab) => {
     const messagesToSend = [...messageQueue];
