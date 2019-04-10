@@ -1,7 +1,7 @@
 import appStrings from 'appStrings';
 import { sendMessageToBackgroundScript, getActivePage } from 'common/utils';
 import { APP_CONSTANTS } from "appConstants";
-import { IExtensionEventMessage, IYoutubeVideo, ActivePage, ExtensionModule } from "models";
+import { IExtensionEventMessage, IYoutubeVideo, ActivePage, ExtensionModule } from "interfaces";
 import { startDataExtractionProcess } from "contentScripts/services/initialHistoryExtractor";
 import { loadExternalDataFetchingScript, sendMessageToVariableAccessScript } from "./services/variableScriptCommunicator";
 import set = require('lodash/set');

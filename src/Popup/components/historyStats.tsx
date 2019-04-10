@@ -1,11 +1,11 @@
 import * as React from 'react';
 import StatsTabularView from './tabularStats';
 import StatsGraphicalView from './graphicalStats';
-import { StatsIntervalOptions, StatsDisplayTypes, StatsDataFetchingCases, ExtensionModule } from "models";
+import { StatsIntervalOptions, StatsDisplayTypes, StatsDataFetchingCases, ExtensionModule } from "interfaces";
 import { convertEnumToArray, sendMessageToBackgroundScript } from 'common/utils';
 import DatePicker from "react-datepicker";
 import { storeAsync as store } from 'chrome-utils';
-import { IYoutubeDayStats } from "models";
+import { IYoutubeDayStats } from "interfaces";
 
 import "react-datepicker/dist/react-datepicker.css";
 import { APP_CONSTANTS } from 'appConstants';

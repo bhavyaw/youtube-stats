@@ -1,4 +1,4 @@
-import { IYoutubeVideo, IYoutubeUser } from './../models';
+import { IYoutubeVideo, IYoutubeUser } from '../interfaces';
 import { storeAsync as store } from 'chrome-utils';
 
 import get =  require("lodash/get");

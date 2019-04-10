@@ -1,5 +1,5 @@
 import { getActivePage } from 'common/utils';
-import { ActivePage, ExtensionModule } from "models";
+import { ActivePage, ExtensionModule } from "interfaces";
 import { APP_CONSTANTS, DATA_FETCHING_URLS } from "appConstants";
 import { loadExternalDataFetchingScript, sendMessageToVariableAccessScript } from './services/variableScriptCommunicator';
 import axios, { AxiosRequestConfig } from 'axios';

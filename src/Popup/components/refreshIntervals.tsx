@@ -1,5 +1,5 @@
 import * as React from 'react';
-import { RefreshIntervals } from "models";
+import { RefreshIntervals } from "interfaces";
 
 export interface Props {
   activeRefreshInterval: number,

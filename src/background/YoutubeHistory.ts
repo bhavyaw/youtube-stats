@@ -1,8 +1,8 @@
 import { APP_CONSTANTS } from 'appConstants';
-import { IYoutubeVideo, IHistoryStats } from './../models';
+import { IYoutubeVideo, IHistoryStats } from '../interfaces';
 import { storeAsync as store } from 'chrome-utils';
 import YoutubeVideo from "./YoutubeVideo";
-import { INewInitialHistoryData, IYoutubeHistory } from 'models';
+import { INewInitialHistoryData, IYoutubeHistory } from 'interfaces';
 
 import isEmpty = require("lodash/isEmpty");
 import mergeWith = require("lodash/mergeWith");

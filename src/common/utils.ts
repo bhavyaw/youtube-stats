@@ -1,4 +1,4 @@
-import { ActivePage, IExtensionEventMessage, ExtensionModule } from '../models';
+import { ActivePage, IExtensionEventMessage, ExtensionModule } from '../interfaces';
 import isEmpty = require('lodash/isEmpty');
 
 export function sendMessageToBackgroundScript(message: any, sender: ExtensionModule, responseCallback?: Function) {
@@ -19,7 +19,6 @@ export function timeout(ms) {
 }
 
 export function convertUserIdToSavableForm(userId: string): string {
-  userId = userId.replace(".com", "");
   userId = userId.replace(/\./g, "_"); // replacing underscores with 
   return userId;
 }

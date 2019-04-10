@@ -1,6 +1,6 @@
 import YoutubeVideo from 'background/YoutubeVideo';
 import appGlobals from 'globals';
-import { IExtensionEventMessage, ActivePage } from 'models';
+import { IExtensionEventMessage, ActivePage } from 'interfaces';
 import  axios, {AxiosRequestConfig} from 'axios';
 import { DATA_FETCHING_URLS } from 'appConstants';
 import {APP_CONSTANTS} from "appConstants";

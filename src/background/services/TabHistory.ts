@@ -1,5 +1,5 @@
 import { getActivePage } from 'common/utils';
-import { ActivePage, IRoutingType, IRoute  } from 'models';
+import { ActivePage, IRoutingType, IRoute  } from 'interfaces';
 
 
 class TabHistory {

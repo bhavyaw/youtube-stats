@@ -2,7 +2,7 @@ import * as React from 'react';
 import PopUpHeader from './PopupRefresh';
 import { storeAsync as store } from 'chrome-utils';
 import { convertUserIdToOriginalForm, sendMessageToBackgroundScript } from 'common/utils';
-import { IExtensionEventMessage, ExtensionModule } from 'models';
+import { IExtensionEventMessage, ExtensionModule } from 'interfaces';
 import { APP_CONSTANTS } from 'appConstants';
 import { appConfig } from "config";
 import RefreshInterval from './refreshIntervals';

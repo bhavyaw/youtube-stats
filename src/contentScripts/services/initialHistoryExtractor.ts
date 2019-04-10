@@ -2,7 +2,7 @@ import YoutubeVideo from 'background/YoutubeVideo';
 import { sendMessageToBackgroundScript } from 'common/utils';
 import { APP_CONSTANTS } from 'appConstants';
 import { loadExternalDataFetchingScript, sendMessageToVariableAccessScript } from './variableScriptCommunicator';
-import { IYoutubeVideo, INewInitialHistoryData, ExtensionModule } from 'models';
+import { IYoutubeVideo, INewInitialHistoryData, ExtensionModule } from 'interfaces';
 import ContinuationDataService from "./continuationDataFetcher";
 import isEmpty = require('lodash/isEmpty');
 

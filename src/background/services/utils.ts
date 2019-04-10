@@ -1,5 +1,5 @@
 import { APP_CONSTANTS } from './../../appConstants';
-import { IExtensionEventMessage } from "models";
+import { IExtensionEventMessage } from "interfaces";
 
 function sendMessageToPopUpPage(message: IExtensionEventMessage) {
   console.log("sending message to popup page...", message);

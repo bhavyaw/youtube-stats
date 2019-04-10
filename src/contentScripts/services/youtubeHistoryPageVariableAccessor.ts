@@ -1,4 +1,4 @@
-import { IRequestHeaders, IExtensionEventMessage, IRoutingType, IRoute, ExtensionModule } from "models";
+import { IRequestHeaders, IExtensionEventMessage, IRoutingType, IRoute, ExtensionModule } from "interfaces";
 import { APP_CONSTANTS } from "appConstants";
 
 class WindowCommunicator {

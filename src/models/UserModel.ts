@@ -1,43 +1,20 @@
+import { numberOrString } from '../interfaces';
 import { appConfig } from 'config';
-import { IYoutubeVideo } from 'models';
+import { IYoutubeVideo } from 'interfaces';
 import BaseModel from "./BaseModel";
-import { StatsIntervalOptions } from 'models';
-import isEmpty = require('lodash/isEmpty');
-import isString = require('lodash/isString');
-import isNil = require('lodash/isNil');
+import { StatsIntervalOptions } from 'interfaces';
 
 export default class User extends BaseModel {
-  public id : string; //user id
-  private workingId : string 
-  private lastSavedVideo : IYoutubeVideo | {} = {};
-  private continuationDataFetchingParam : string = "";
-  private lastRun : number = 0;
+  private lastSavedVideo : IYoutubeVideo | any = {};
+  private continuationDataFetchingParam : string = null;
+  private lastRun : number = null;
   private lastAccessedStatsInterval : StatsIntervalOptions = appConfig.defaultStatsInterval;
-  /**
-   *
-   */
-  constructor(userId : string) {
-    super();
-    if (isNil(userId)) {
-      throw new Error(`Please enter a valid user id : ${userId}`);
+  private statsCache : any = {};
+
+  constructor(userId : numberOrString, setDefaults = false, storeType?) {
+    super(storeType, userId);
+    if (setDefaults) {
+      this.setDefaults();
     }
-    this.id = userId;
-    this.workingId = this.convertUserIdToSavableForm(userId);
-  }
-
-  getDetails(keyPath : Array<any>) {
-    if (isNil(keyPath)) {
-      return this.get()
-    }
-  }
-
-  setDetails() {
-
-  }
-
-  convertUserIdToSavableForm(userId) {
-    userId = userId.replace(".com", "");
-    userId = userId.replace(/\./g, "_"); // replacing underscores with 
-    return userId;
   }
 }

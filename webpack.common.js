@@ -78,6 +78,7 @@ module.exports = {
       contentScripts: path.resolve(__dirname, "src/contentScripts"),
       background: path.resolve(__dirname, "src/background"),
       models: path.resolve(__dirname, "src/models"),
+      interfaces: path.resolve(__dirname, "src/interfaces"),
       appConstants: path.resolve(__dirname, "src/appConstants"),
       config: path.resolve(__dirname, "src/appConfig"),
       globals: path.resolve(__dirname, "src/appGlobals"),

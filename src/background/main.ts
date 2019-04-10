@@ -1,4 +1,4 @@
-import { IExtensionEventMessage, INewInitialHistoryData, IYoutubeVideo, ExtensionModule, StatsIntervalOptions } from 'models';
+import { IExtensionEventMessage, INewInitialHistoryData, IYoutubeVideo, ExtensionModule, StatsIntervalOptions } from 'interfaces';
 import { APP_CONSTANTS } from 'appConstants';
 import { storeAsync as store } from 'chrome-utils';
 import YoutubeHistory from './YoutubeHistory';
@@ -11,7 +11,8 @@ import { isNumber, uniq } from 'lodash';
 import YoutubeHistoryStats from './services/YoutubeHistoryStats';
 import { showDesktopNotification } from 'common/utils';
 import appStrings from 'appStrings';
-import baseModel from 'models/BaseModel';
+import User from 'models/UserModel';
+import App from 'models/AppModel';
 
 // background js globals
 let stopFetchingContinuationData = false;
@@ -23,16 +24,17 @@ const messageQueue: Set<IExtensionEventMessage> = new Set();
 
 initializeBackgroundScript();
 
-const storeRemove = store.remove;
-
 function initializeBackgroundScript() {
-  console.log("Initializing Background script...", store, storeRemove, baseModel);
+  console.log("Initializing Background script...", store, User, App );
+  const user = new User("bhavya.wadhwa@gmail.com", true);
+  const app = new App(true);
+  console.log(`User and app`, user, app);
   // browser start event 
   // TODO : enable this in production
   // chrome.runtime.onStartup.addListener(async () => {
   // });
 
-  handleBrowserStartEvent();
+  // handleBrowserStartEvent();
 }
 
 function handleBrowserStartEvent() {

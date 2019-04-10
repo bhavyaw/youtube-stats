@@ -1,5 +1,4 @@
-import { ExtensionModule } from './../../models';
-import { IExtensionEventMessage } from "models";
+import { IExtensionEventMessage, ExtensionModule } from "interfaces";
 
 const variableScriptListeners = [];
 

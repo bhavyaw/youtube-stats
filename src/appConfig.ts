@@ -1,4 +1,4 @@
-import { StatsIntervalOptions, RefreshIntervals, StatsDisplayTypes } from "models";
+import { StatsIntervalOptions, RefreshIntervals, StatsDisplayTypes } from "interfaces";
 
 export const statDisplayFields = {
   [StatsIntervalOptions.Daily] : ["formattedDate", "totalCount", "formattedDuration"],

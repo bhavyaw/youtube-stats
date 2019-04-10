@@ -1,13 +1,12 @@
 import { APP_CONSTANTS } from './../../appConstants';
-import { IHistoryStats, IYoutubeVideo, IYoutubeHistory, IYoutubeDayStats } from 'models';
+import { IHistoryStats, IYoutubeVideo, IYoutubeHistory, IYoutubeDayStats, StatsIntervalOptions } from 'interfaces';
 import { storeAsync as store } from 'chrome-utils';
 import { formatDate } from './utils';
 import {convertDurationToProperFormat} from 'common/utils';
 import isString = require('lodash/isString');
-import { StatsIntervalOptions } from 'models';
 import isUndefined = require('lodash/isUndefined');
 import isEmpty = require('lodash/isEmpty');
-import { kebabCase, cloneDeep, clone } from 'lodash';
+import { kebabCase, clone } from 'lodash';
 
 
 class YoutubeHistoryStatsService implements IHistoryStats {

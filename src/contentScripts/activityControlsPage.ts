@@ -1,4 +1,4 @@
-import { IExtensionEventMessage, ActivePage, ExtensionModule } from "models";
+import { IExtensionEventMessage, ActivePage, ExtensionModule } from "interfaces";
 import { APP_CONSTANTS } from "appConstants";
 import { sendMessageToBackgroundScript, convertUserIdToOriginalForm, getActivePage } from "common/utils";
 import { delegate } from 'receptor';

@@ -1,6 +1,7 @@
 export type stringOrArr = string | Array<string>;
 export type chromeStorage = chrome.storage.LocalStorageArea | chrome.storage.SyncStorageArea;
 export type storeType = "local" | "sync";
+export type numberOrString = number | string;
 
 export enum ActivePage {
     home = "home",

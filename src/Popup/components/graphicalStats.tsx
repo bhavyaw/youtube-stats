@@ -1,5 +1,5 @@
 import * as React from 'react';
-import { IHistoryStats, IYoutubeDayStats } from 'models';
+import { IHistoryStats, IYoutubeDayStats } from 'interfaces';
 import { 
   BarChart,
   CartesianGrid,

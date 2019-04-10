@@ -1,4 +1,4 @@
-import { IExtensionEventMessage, IRequestHeaders, IRoute, IRoutingType, ActivePage, ExtensionModule } from "models";
+import { IExtensionEventMessage, IRequestHeaders, IRoute, IRoutingType, ActivePage, ExtensionModule } from "interfaces";
 
 
 class WindowCommunicator {
