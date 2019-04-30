@@ -15,6 +15,7 @@
     "member-ordering": false,
     "variable-name": false,
     "no-var-requires": false,
+    "dot-notation": false,
     "no-any": false,
     "typedef": {
       "options": [

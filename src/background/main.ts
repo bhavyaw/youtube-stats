@@ -1,15 +1,17 @@
-import { IExtensionEventMessage, INewInitialHistoryData, IYoutubeVideo, ExtensionModule, StatsIntervalOptions } from 'interfaces';
+import {
+  IExtensionEventMessage,
+  INewInitialHistoryData,
+  IYoutubeVideo,
+  ExtensionModule,
+  StatsIntervalOptions
+} from 'interfaces';
 import { APP_CONSTANTS } from 'appConstants';
-import { storeAsync as store } from 'chrome-utils';
-import YoutubeHistory from './YoutubeHistory';
-import { appConfig } from 'config';
-
-import isNil = require("lodash/isNil");
+import YoutubeHistory from 'models/YoutubeHistory';
+import isNil = require('lodash/isNil');
 import isEmpty = require('lodash/isEmpty');
-import isDate = require("lodash/isDate");
-import { isNumber, uniq } from 'lodash';
-import YoutubeHistoryStats from './services/YoutubeHistoryStats';
-import { showDesktopNotification } from 'common/utils';
+import { isNumber } from 'lodash';
+import YoutubeHistoryStats from 'models/IntervalStats';
+import { showDesktopNotification, isValidDate } from 'common/utils';
 import appStrings from 'appStrings';
 import User from 'models/UserModel';
 import App from 'models/AppModel';
@@ -18,33 +20,38 @@ import App from 'models/AppModel';
 let stopFetchingContinuationData = false;
 let lastRun: Date = null;
 let activityControlsTabId: number = 0;
-let newSelectedUserInPopup : string = "";
+let lastActiveUser: string = '';
 // To take care of the missing messages
 const messageQueue: Set<IExtensionEventMessage> = new Set();
 
 initializeBackgroundScript();
 
-function initializeBackgroundScript() {
-  console.log("Initializing Background script...", store, User, App );
-  const user = new User("bhavya.wadhwa@gmail.com", true);
-  const app = new App(true);
-  console.log(`User and app`, user, app);
-  // browser start event 
+async function initializeBackgroundScript() {
+  const app: App = new App(true);
+  console.log('Initializing Background script...');
+  // const appModel: App = new App();
+  // lastActiveUser = await appModel.get('lastActiveUser');
+  // browser start event
   // TODO : enable this in production
   // chrome.runtime.onStartup.addListener(async () => {
   // });
 
-  // handleBrowserStartEvent();
+  handleBrowserStartEvent();
 }
 
 function handleBrowserStartEvent() {
   // showDesktopNotification(`Browser has started!!!`);
-  intiateRefreshCycle();
+  // intiateRefreshCycle();
   listenToTabEvents();
-  chrome.runtime.onMessage.addListener(function (message: IExtensionEventMessage, sender: any, sendResponseFunc: Function) {
-    if (message.sender === ExtensionModule.Background) {
+  chrome.runtime.onMessage.addListener(function(
+    message: IExtensionEventMessage,
+    sender: any,
+    sendResponseFunc: Function
+  ) {
+    console.log(`Background Scripts : Message received : `, message, ExtensionModule[sender]);
+    if (message.sender === ExtensionModule.Popup) {
       (handleMessagesFromPopupScript as any)(...arguments);
-    } else {
+    } else if (message.sender === ExtensionModule.ContentScript) {
       (handleMessagesFromContentScript as any)(...arguments);
     }
     return true;
@@ -58,14 +65,17 @@ function runRefreshCycle() {
   }
 
   // showDesktopNotification(`Running Refresh Cycle | Opening activity control tab`, "Testing Notification");
-  chrome.tabs.create({
-    active: false,
-    pinned: true,
-    index: 0,
-    url: `https://myaccount.google.com/activitycontrols`,
-  }, (tab: chrome.tabs.Tab) => {
-    activityControlsTabId = tab.id;
-  });
+  chrome.tabs.create(
+    {
+      active: false,
+      pinned: true,
+      index: 0,
+      url: `https://myaccount.google.com/activitycontrols`
+    },
+    (tab: chrome.tabs.Tab) => {
+      activityControlsTabId = tab.id;
+    }
+  );
 }
 
 function listenToTabEvents() {
@@ -77,19 +87,23 @@ function listenToTabEvents() {
       console.log(`Tab updated  : `, tab);
       const url: URL = new URL(tab.url);
       const completeUrl: string = url.host + url.pathname;
-      const urlHash : string = url.hash;
+      const urlHash: string = url.hash;
 
       if (activityControlsPageUrlRegex.test(completeUrl)) {
-        console.log("Activity controls tab opened via extension programmatically");
+        console.log('Activity controls tab opened via extension programmatically');
         if (tab.id === activityControlsTabId) {
           runPreRefreshCycleChecks(tab);
         } else if (urlHash === appStrings.extensionUrlHash) {
           // delete stale extraction tabs
           chrome.tabs.remove(tab.id);
         }
-      } 
+      }
 
-      if (myActivityPageRegex.test(completeUrl) && tab.id !== activityControlsTabId && urlHash.includes(appStrings.extensionUrlHash)) {
+      if (
+        myActivityPageRegex.test(completeUrl) &&
+        tab.id !== activityControlsTabId &&
+        urlHash.includes(appStrings.extensionUrlHash)
+      ) {
         console.log(`MyActivity tab opened by extension`, tab);
         // delete stale extraction tabs
         chrome.tabs.remove(tab.id);
@@ -97,15 +111,19 @@ function listenToTabEvents() {
     }
   });
 
-  chrome.tabs.onRemoved.addListener(function (closedTabId) {
+  chrome.tabs.onRemoved.addListener(function(closedTabId) {
     if (closedTabId === activityControlsTabId) {
       activityControlsTabId = 0;
     }
   });
 }
 
-async function handleMessagesFromContentScript(message: IExtensionEventMessage, sender: any, sendResponseFunc: Function): Promise<any> {
-  console.log("inside content script message handler : ", message, sender);
+async function handleMessagesFromContentScript(
+  message: IExtensionEventMessage,
+  sender: any,
+  sendResponseFunc: Function
+): Promise<any> {
+  console.log('inside content script message handler : ', message, sender);
   if (sender.tab) {
     const messageType: string = message.type;
     const data: any = message.data;
@@ -114,28 +132,34 @@ async function handleMessagesFromContentScript(message: IExtensionEventMessage, 
     const userId: string = message.userId;
 
     switch (messageType) {
-      case APP_CONSTANTS.DATA_EXCHANGE_TYPE.OTHER_USERS : 
-        const {users} : {users : Array<string>} = data;
+      case APP_CONSTANTS.DATA_EXCHANGE_TYPE.OTHER_USERS:
+        const { users }: { users: string[] } = data;
         console.log(`Received other users from activity controls pages`, users);
         saveOtherUsers(users);
-      break;
+        break;
 
       case APP_CONSTANTS.PROCESSES.HIGHLIGHT_TAB:
-        console.log("Handle user logged out...", sender);
-        chrome.tabs.update(tabId, {
-          active: true
-        }, () => {});
+        console.log('Handle user logged out...', sender);
+        chrome.tabs.update(
+          tabId,
+          {
+            active: true
+          },
+          () => {}
+        );
 
         break;
 
       case APP_CONSTANTS.DATA_EXCHANGE_TYPE.USER_ID:
-        console.log("Received userId from the content script", userId);
+        console.log('Received userId from the content script', userId);
         if (userId && tabId === activityControlsTabId) {
+          const user: User = new User(userId);
+          const userData: any = (await user.get()) as User;
+          const savedContinuationDataFetchingParam = userData.continuation;
+          const lastSavedVideo: IYoutubeVideo = userData.lastSavedVideo;
           lastRun = new Date();
-          const lastSavedVideo = await store.get(`lastSavedVideo.${userId}`);
-          const savedContinuationDataFetchingParam = await store.get(`continuation.${userId}`);
 
-          console.log("Last saved video was : ", lastSavedVideo);
+          console.log('Last saved video was : ', lastSavedVideo);
           sendMessageToActiveTab(tabId, {
             type: APP_CONSTANTS.DATA_EXCHANGE_TYPE.GET_INITIAL_YOUTUBE_HISTORY_DATA,
             data: {
@@ -143,49 +167,50 @@ async function handleMessagesFromContentScript(message: IExtensionEventMessage, 
             }
           });
 
-          if (savedContinuationDataFetchingParam && savedContinuationDataFetchingParam !== APP_CONSTANTS.CONTINUATION_DATA_END) {
+          if (
+            savedContinuationDataFetchingParam &&
+            savedContinuationDataFetchingParam !== APP_CONSTANTS.CONTINUATION_DATA_END
+          ) {
             fetchContinuationData(tabId, userId, savedContinuationDataFetchingParam);
           }
         }
         break;
 
       case APP_CONSTANTS.DATA_EXCHANGE_TYPE.INITIAL_YOUTUBE_HISTORY_DATA:
-        console.log("initial data received from content script : ", data);
+        console.log('initial data received from content script : ', data);
         saveInitialHistoryData(tabId, data, userId, lastRun);
         break;
 
       case APP_CONSTANTS.DATA_EXCHANGE_TYPE.CONTINUATION_DATA:
-        console.log("Continuation data received from content script : ", data);
+        console.log('Continuation data received from content script : ', data);
         saveContinuationData(tabId, data, userId, lastRun);
         break;
 
-      case APP_CONSTANTS.PROCESSES.SHOW_DESKTOP_NOTIFICATION : 
-        const {message, title} = data;
+      case APP_CONSTANTS.PROCESSES.SHOW_DESKTOP_NOTIFICATION:
+        const { message, title } = data;
         showDesktopNotification(message, title);
     }
   }
 }
 
-async function saveOtherUsers(users : Array<string>) {
-  const existingUsers = await store.get("users") || [];
-  let newUsersToStore : Array<string> = uniq(existingUsers.concat(users));
-  console.log("Existing users : %o, New Extracted Users : %o, New users to save : %o",existingUsers, users, newUsersToStore);
-
-  if (existingUsers.length !== newUsersToStore.length) {
-    console.log("Saving new users in store : ", newUsersToStore);
-    await store.set("users", newUsersToStore);
-  }
+async function saveOtherUsers(newUsers: string[]) {
+  const user: User = new User();
+  return await user.updateActiveUsers(newUsers);
 }
 
-async function handleMessagesFromPopupScript(message: IExtensionEventMessage, sender, sendResponseFunc) {
+async function handleMessagesFromPopupScript(
+  message: IExtensionEventMessage,
+  sender,
+  sendResponseFunc
+) {
   console.log(`Handling messages from popup script : `, message);
 
-  const {data, userId, type : messageType} = message;
+  const { data, userId, type: messageType } = message;
 
   switch (messageType) {
     case APP_CONSTANTS.PROCESSES.MANUAL_RUN_REFRESH_CYCLE:
       console.log(`Manually running refresh cycle for user`, userId);
-      newSelectedUserInPopup = userId;
+      lastActiveUser = userId;
       intiateRefreshCycle();
       break;
 
@@ -195,63 +220,110 @@ async function handleMessagesFromPopupScript(message: IExtensionEventMessage, se
       break;
 
     case APP_CONSTANTS.DATA_EXCHANGE_TYPE.FETCH_STATS_FOR_INTERVAL:
-      const { selectedStatsInterval, selectedDate, loadCount, selectedUserId }: { selectedStatsInterval: StatsIntervalOptions, selectedDate, loadCount: number, selectedUserId: string } = data;
-      console.log(`Generating stats for interval :`, selectedStatsInterval, selectedDate);
-      try {
-        const historyStats: any = await YoutubeHistoryStats.getStatsForInterval(selectedStatsInterval, selectedDate, selectedUserId, loadCount);
-        const lastSavedStatsInterval : number = await store.get(`lastAccessedStatsInterval`);
-        if (!lastSavedStatsInterval || (lastSavedStatsInterval && lastSavedStatsInterval !== selectedStatsInterval)) {
-          await store.set(`lastAccessedStatsInterval`, selectedStatsInterval);
-        }
-        sendResponseFunc(historyStats);
-      } catch (error) {
-        throw error;
-      }
+      await fetchPopUpIntervalStats(data, sendResponseFunc);
+      break;
+  }
+
+  return true;
+}
+
+async function fetchPopUpIntervalStats(data: any, sendResponseFunc) {
+  const {
+    selectedStatsInterval,
+    selectedDate,
+    loadCount,
+    selectedUserId
+  }: {
+    selectedStatsInterval: StatsIntervalOptions;
+    selectedDate;
+    loadCount: number;
+    selectedUserId: string;
+    prevSelectedStatsInterval: StatsIntervalOptions;
+    prevSelectedUserId: string;
+  } = data;
+
+  console.log(`Generating stats for interval :`, selectedStatsInterval, selectedDate);
+  try {
+    const historyStats: any = await YoutubeHistoryStats.getStatsForInterval(
+      selectedStatsInterval,
+      selectedDate,
+      selectedUserId,
+      loadCount
+    );
+
+    sendResponseFunc(historyStats);
+
+    const app: App = new App();
+    const appData: App = await app.get();
+    const lastActiveUser = appData.lastActiveUser;
+    const user: User = new User(selectedUserId);
+    const lastAccessedStatsInterval = await user.get('lastAccessedStatsInterval');
+    // set user
+    // updating lastSelectedStatsInterval for the selectedUser
+    if (selectedStatsInterval !== lastAccessedStatsInterval) {
+      await user.save('lastAccessedStatsInterval', selectedStatsInterval);
+    }
+
+    if (selectedUserId !== lastActiveUser) {
+      await app.save('lastActiveUser', selectedUserId);
+    }
+  } catch (error) {
+    throw error;
   }
 }
 
 // NOTE : refresh interval cannot be per user because we get userId after opening the tab and not before
 async function intiateRefreshCycle() {
   console.log(`\n====> Inside run refresh cycle...\n`);
-  const lastRunString: string = await store.get(`lastRun`);
-  let activeRefreshInterval: number = await store.get(`activeRefreshInterval`);
-  const lastIntervalChangeDateString: string = await store.get(`activeIntervalChangeDate`);
-
-  activeRefreshInterval = activeRefreshInterval || appConfig.defaultRefreshInterval;
-
+  const app: App = new App();
+  const appData: any = await app.get();
+  const lastActiveUser: string = appData.lastActiveUser;
+  const activeRefreshInterval: number = appData.activeRefreshInterval;
+  const lastIntervalChangeDateString: string = appData.activeIntervalChangeDate;
+  const user: User = new User(lastActiveUser);
+  const lastRunString: string = await user.get('lastRun');
   const lastRunDate: Date = new Date(lastRunString);
   const lastIntervalChangeDate: Date = new Date(lastIntervalChangeDateString);
-  let shouldRunRefreshCycle: boolean = false; // first time
+  let shouldRunRefreshCycle: boolean = true; // first time
 
-  if (isDate(lastIntervalChangeDate)) {
+  console.log(lastIntervalChangeDateString, lastIntervalChangeDate);
+  if (isValidDate(lastIntervalChangeDate)) {
+    console.log('first');
     shouldRunRefreshCycle = canRunRefreshCycle(lastIntervalChangeDate, activeRefreshInterval);
-  } else if (isDate(lastRunDate)) {
+  } else if (isValidDate(lastRunDate)) {
+    console.log('second');
     shouldRunRefreshCycle = canRunRefreshCycle(lastRunDate, activeRefreshInterval);
   }
 
   /**
    * TODO : currently we make sure that no refresh cycle is currently running by checking activity control tab is open,
    * if it is open we assume that the refresh cycle is running and we don't run any new refresh cycle.
-   * Later if time : Actually check whether the refresh cycle is running in the open tab by some means...and if not then re-run refresh 
+   * Later if time : Actually check whether the refresh cycle is running in the open tab by some means...and if not then re-run refresh
    * in the tab only by refreshing it
    */
-  
+
+  console.log(
+    `intiateRefreshCycle() : `,
+    shouldRunRefreshCycle,
+    lastIntervalChangeDate,
+    lastRunDate
+  );
   if (shouldRunRefreshCycle) {
     runRefreshCycle();
   }
 }
 
 function runPreRefreshCycleChecks(activeTab: chrome.tabs.Tab) {
-  console.log("running prerefresh cycle checks", activeTab, activityControlsTabId);
+  console.log('running prerefresh cycle checks', activeTab, activityControlsTabId);
   if (activeTab.id === activityControlsTabId) {
     const message: IExtensionEventMessage = {
       type: APP_CONSTANTS.PROCESSES.RUN_PRE_REFRESH_CHECKS,
-      sender : ExtensionModule.Background
+      sender: ExtensionModule.Background
     };
 
-    if (!isEmpty(newSelectedUserInPopup)) {
+    if (!isEmpty(lastActiveUser)) {
       Object.assign(message, {
-        userId : newSelectedUserInPopup
+        userId: lastActiveUser
       });
     }
 
@@ -260,57 +332,80 @@ function runPreRefreshCycleChecks(activeTab: chrome.tabs.Tab) {
 }
 
 async function updateRefreshInterval(newRefreshInterval: number, sendResponseFunc) {
+  const app: App = new App();
+
   if (newRefreshInterval && isNumber(newRefreshInterval)) {
     try {
-      await store.set(`activeRefeshInterval`, newRefreshInterval);
       const refreshIntervalUpdateTime: Date = new Date();
       const refreshIntervalUpdateTimeString: string = refreshIntervalUpdateTime.toISOString();
-      await store.set(`activeIntervalChangeDate`, refreshIntervalUpdateTimeString);
+
+      await app.save({
+        activeRefeshInterval: newRefreshInterval,
+        activeIntervalChangeDate: refreshIntervalUpdateTimeString
+      });
 
       sendResponseFunc({
         newRefreshInterval
       });
     } catch (error) {
-      showDesktopNotification("Some error occured in updating refresh Interval", "Error");
+      showDesktopNotification('Some error occured in updating refresh Interval', 'Error');
     }
   } else {
-    throw new Error(`No refresh interval or incorrect received from popup.ts : ${newRefreshInterval}`);
+    throw new Error(
+      `No refresh interval or incorrect received from popup.ts : ${newRefreshInterval}`
+    );
   }
 }
 
-async function saveInitialHistoryData(activeTabId: number, latestHistoryData: INewInitialHistoryData, userId: string, lastRun: Date) {
-  console.log(" SaveInitialHistoryData() : New initial History to save", latestHistoryData, userId, "\n\n");
+async function saveInitialHistoryData(
+  activeTabId: number,
+  latestHistoryData: INewInitialHistoryData,
+  userId: string,
+  lastRun: Date
+) {
+  console.log(
+    ' SaveInitialHistoryData() : New initial History to save',
+    latestHistoryData,
+    userId,
+    '\n\n'
+  );
   const youtubeHistory: YoutubeHistory = new YoutubeHistory(latestHistoryData, userId, lastRun);
   const newContinuationDataFetchingParam: string = youtubeHistory.continuationDataFetchingParam;
   await youtubeHistory.updateVideoHistory();
 
   // // First time data saving case only
-  const savedContinuationDataFetchingParam = await store.get(`continuation.${userId}`);
+  const savedContinuationDataFetchingParam = await youtubeHistory.user.get('continuation');
   // only when there's no continuation data i.e first time --> save continuation data and fetch continuation data
   // rest of the times it will happen of its own
-  if (isNil(savedContinuationDataFetchingParam) && !stopFetchingContinuationData) {
-    console.log(`SaveInitialHistoryData() : No saved continuation data fetching parameters found...saving c.d.f.p`, "\n\n");
+  if (isEmpty(savedContinuationDataFetchingParam) && !stopFetchingContinuationData) {
+    console.log(
+      `SaveInitialHistoryData() : No saved continuation data fetching parameters found...saving c.d.f.p`,
+      '\n\n'
+    );
     if (!isNil(newContinuationDataFetchingParam)) {
       await youtubeHistory.updateContinuationDataFetchingParam();
-      console.log(`SaveInitialHistoryData() : Saving new Continuation Data Fetching Param`, "\n\n");
+      console.log(`SaveInitialHistoryData() : Saving new Continuation Data Fetching Param`, '\n\n');
       fetchContinuationData(activeTabId, userId, newContinuationDataFetchingParam);
       return;
     }
   }
 }
 
-
-async function fetchContinuationData(activeTabId: number, userId: string, continuationDataFetchingParam: string) {
+async function fetchContinuationData(
+  activeTabId: number,
+  userId: string,
+  continuationDataFetchingParam: string
+) {
   // continuation data can be fetched from ony of the three pages
   // if continuation data fetching is in progress then do entertain any further requests
   // after fetching continuation data save it, after saving it, again try fetching the continuation data from the same tab if active otherwise pick some other tab
-  console.log(`fetchContinuationData() :`, continuationDataFetchingParam, userId, "\n\n");
+  console.log(`fetchContinuationData() :`, continuationDataFetchingParam, userId, '\n\n');
 
   if (isEmpty(userId)) {
     throw new Error(`Inside fetch continuation data, userId is null ${userId}`);
   }
 
-  const message : any = {
+  const message: any = {
     type: APP_CONSTANTS.DATA_EXCHANGE_TYPE.GET_CONTINUATION_DATA,
     data: {
       continuationDataFetchingParam
@@ -318,12 +413,19 @@ async function fetchContinuationData(activeTabId: number, userId: string, contin
     userId
   };
 
-  console.log(`fetchContinuationData() : continuationDataFetchingParam exists....fetching continuation data now`, "\n\n");
+  console.log(
+    `fetchContinuationData() : continuationDataFetchingParam exists....fetching continuation data now`,
+    '\n\n'
+  );
   sendMessageToActiveTab(activeTabId, message);
 }
 
-
-async function saveContinuationData(activeTabId: any, continuationData: INewInitialHistoryData, userId: string, lastRun: Date) {
+async function saveContinuationData(
+  activeTabId: any,
+  continuationData: INewInitialHistoryData,
+  userId: string,
+  lastRun: Date
+) {
   const youtubeHistory: YoutubeHistory = new YoutubeHistory(continuationData, userId, lastRun);
   const newlyWatchedVideos: IYoutubeVideo[] = youtubeHistory.historyDataArr;
   const newContinuationDataFetchingParam: string = youtubeHistory.continuationDataFetchingParam;
@@ -334,21 +436,28 @@ async function saveContinuationData(activeTabId: any, continuationData: INewInit
     if (!isEmpty(newlyWatchedVideos)) {
       await youtubeHistory.updateContinuationData();
 
-      if (newContinuationDataFetchingParam && newContinuationDataFetchingParam !== APP_CONSTANTS.CONTINUATION_DATA_END && !stopFetchingContinuationData) {
-          console.log(` saveContinuationData() : Fetching continuation data from inside of Save Continuation data...`, "\n\n");
-          fetchContinuationData(activeTabId, userId, newContinuationDataFetchingParam);
+      if (
+        newContinuationDataFetchingParam &&
+        newContinuationDataFetchingParam !== APP_CONSTANTS.CONTINUATION_DATA_END &&
+        !stopFetchingContinuationData
+      ) {
+        console.log(
+          ` saveContinuationData() : Fetching continuation data from inside of Save Continuation data...`,
+          '\n\n'
+        );
+        fetchContinuationData(activeTabId, userId, newContinuationDataFetchingParam);
       }
     }
   } catch (e) {
-    console.log("Some error occurred in saving continuation data :", e);
-    throw new Error("Some error occured in saving continuation data");
+    console.log('Some error occurred in saving continuation data :', e);
+    throw new Error('Some error occured in saving continuation data');
   }
 }
 
 function sendMessageToActiveTab(preferableTabId: number, message) {
-  const messageToSend : IExtensionEventMessage = {
+  const messageToSend: IExtensionEventMessage = {
     ...message,
-    sender : ExtensionModule.Background
+    sender: ExtensionModule.Background
   };
   messageQueue.add(messageToSend);
 
@@ -356,7 +465,7 @@ function sendMessageToActiveTab(preferableTabId: number, message) {
     const messagesToSend = [...messageQueue];
 
     if (preferableTab) {
-      chrome.tabs.sendMessage(preferableTab.id, messagesToSend)
+      chrome.tabs.sendMessage(preferableTab.id, messagesToSend);
     }
     messageQueue.clear();
   });
@@ -369,9 +478,8 @@ function canRunRefreshCycle(dateToCompare: Date, activeRefreshInterval: number) 
   currentDate = new Date(currentDate.setHours(0, 0, 0, 0));
   dateToCompare = new Date(dateToCompare.setHours(0, 0, 0, 0));
 
-  return ((currentDate.valueOf() - dateToCompare.valueOf()) > activeRefreshIntervalTimeInMs);
+  return currentDate.valueOf() - dateToCompare.valueOf() > activeRefreshIntervalTimeInMs;
 }
-
 
 function toggleStopFetchingCont() {
   stopFetchingContinuationData = !stopFetchingContinuationData;

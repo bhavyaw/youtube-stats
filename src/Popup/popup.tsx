@@ -1,14 +1,14 @@
-import { IExtensionEventMessage } from "interfaces";
+import { IExtensionEventMessage } from 'interfaces';
 import { APP_CONSTANTS } from 'appConstants';
 import * as React from 'react';
 import * as ReactDOM from 'react-dom';
-import PopupContainer from "./components/popupContainer";
-
-import "./Popup.scss";
+import PopupContainer from './components/PopupContainer/PopupContainer';
 
 startPopUpScript();
 
 function startPopUpScript() {
+  window.moveTo(0, 0);
+  window.resizeTo(550, screen.availHeight);
   initialize();
   // chrome.runtime.onMessage.addListener(handleMessageFromBackgroundScript);
 }
@@ -19,7 +19,7 @@ function initialize() {
 
 function renderPopupComponent() {
   // Get the DOM Element that will host our React application
-  const rootEl = document.getElementById("pop-up-container");
+  const rootEl = document.getElementById('pop-up-container');
   // Render the React application to the DOM
   ReactDOM.render(<PopupContainer />, rootEl);
 }
@@ -43,7 +43,7 @@ function sendMessageToBackgroundScript(message: IExtensionEventMessage) {
   chrome.runtime.sendMessage({
     ...message,
     sender: APP_CONSTANTS.RECEIVER.POPUP
-  })
+  });
 }
 
 console.log(sendMessageToBackgroundScript);

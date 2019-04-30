@@ -1,29 +1,30 @@
 {
-    "compilerOptions": {
-        "module": "commonjs",
-        "target": "es5",
-        "lib": ["dom", "es2015"],
-        "moduleResolution": "node",
-        "noImplicitAny": false,
-        "jsx": "react",
-        "sourceMap": true,
-        "rootDir": "./src",
-        "outDir": "dist/js",
-        "noEmitOnError": true,
-        "experimentalDecorators": true,
-        "allowSyntheticDefaultImports": true,
-        "downlevelIteration": true,
-        "baseUrl": "./src",
-        "paths": {
-            "common": ["common/*"],
-            "contentScripts": ["contentScripts/*"],
-            "background": ["background/*"],
-            "models": ["models/*"],
-            "interfaces": ["interfaces.ts"],
-            "appConstants": ["appConstants.ts"],
-            "config": ["appConfig.ts"],
-            "globals": ["appGlobals.ts"],
-            "appStrings": ["appStrings.ts"]
-        }
+  "compilerOptions": {
+    "module": "commonjs",
+    "target": "es5",
+    "lib": ["dom", "es2015"],
+    "moduleResolution": "node",
+    "noImplicitAny": false,
+    "jsx": "react",
+    "sourceMap": true,
+    "rootDir": "./src",
+    "outDir": "dist/js",
+    "noEmitOnError": true,
+    "experimentalDecorators": true,
+    "allowSyntheticDefaultImports": true,
+    "downlevelIteration": true,
+    "baseUrl": "./src",
+    "paths": {
+      "common": ["common/*"],
+      "contentScripts": ["contentScripts/*"],
+      "background": ["background/*"],
+      "interfaces": ["interfaces.ts"],
+      "appConstants": ["appConstants.ts"],
+      "config": ["appConfig.ts"],
+      "globals": ["appGlobals.ts"],
+      "appStrings": ["appStrings.ts"],
+      "models": ["src/models/*"],
+      "assets": ["src/assets"]
     }
+  }
 }

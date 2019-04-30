@@ -1,14 +1,12 @@
 import * as React from 'react';
-import { RefreshIntervals } from "interfaces";
+import { RefreshIntervals } from 'interfaces';
 
 export interface Props {
-  activeRefreshInterval: number,
-  onRefreshIntervalChange(newRefreshIntervalValue: number)
+  activeRefreshInterval: number;
+  onRefreshIntervalChange(newRefreshIntervalValue: number);
 }
 
-export interface State {
-
-}
+export interface State {}
 
 class RefreshInterval extends React.Component<Props, State> {
   private refreshIntervalOptions: any = [];
@@ -42,26 +40,23 @@ class RefreshInterval extends React.Component<Props, State> {
     console.log(`RefreshInterval rendering... `, activeRefreshInterval);
 
     return (
-      <section>
-        {
-          this.refreshIntervalOptions.map(({ intervalName, intervalValue }) => {
-            return (
-              <label
-                key={intervalName}>
-                <input
-                  type="radio"
-                  value={intervalName}
-                  checked={intervalValue === activeRefreshInterval}
-                  onChange={this.handleRefreshIntervalChange.bind(this, intervalValue)} />
-                {intervalName}
-              </label>);
-          }
-          )}
+      <section className="col-12">
+        {this.refreshIntervalOptions.map(({ intervalName, intervalValue }) => {
+          return (
+            <label key={intervalName}>
+              <input
+                type="radio"
+                value={intervalName}
+                checked={intervalValue === activeRefreshInterval}
+                onChange={this.handleRefreshIntervalChange.bind(this, intervalValue)}
+              />
+              {intervalName}
+            </label>
+          );
+        })}
       </section>
     );
   }
 }
 
 export default RefreshInterval;
-
-

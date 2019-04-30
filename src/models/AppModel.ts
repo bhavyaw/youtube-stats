@@ -1,15 +1,16 @@
 import { numberOrString, RefreshIntervals } from 'interfaces';
-import BaseModel from "./BaseModel";
+import BaseModel from './BaseModel';
+import { appConfig } from 'config';
 
 export default class App extends BaseModel {
-  private activeRefreshInterval : RefreshIntervals = RefreshIntervals.Weekly;
-  private activeRefreshIntervalChangeDate : string = null;
-  private lastActiveUser : numberOrString = null;
+  public readonly activeRefreshInterval: RefreshIntervals = appConfig.defaultRefreshInterval;
+  public readonly activeRefreshIntervalChangeDate: string = null;
+  public readonly lastActiveUser: numberOrString = null;
 
   constructor(setDefaults = false, storeType?) {
     super(storeType);
     if (setDefaults) {
-      this.setDefaults();
+      this.saveDefaults();
     }
   }
 }
