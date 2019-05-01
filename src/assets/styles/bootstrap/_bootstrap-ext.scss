@@ -1,0 +1,7 @@
+.btn:focus,
+.btn:active,
+.btn-primary:not(:disabled):not(.disabled):active,
+.btn-primary:not(:disabled):not(.disabled).active {
+  outline: none !important;
+  box-shadow: none !important;
+}

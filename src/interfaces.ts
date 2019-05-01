@@ -5,6 +5,11 @@ export type chromeStorage = chrome.storage.LocalStorageArea | chrome.storage.Syn
 export type storeType = 'local' | 'sync';
 export type numberOrString = number | string;
 
+export enum PopUpActiveViews {
+  statsView,
+  settingsView
+}
+
 export enum ActivePage {
   home = 'home',
   history = 'history',
@@ -29,8 +34,8 @@ export enum StatsIntervalOptions {
 }
 
 export enum StatsDisplayTypes {
-  Table = 0,
-  Graph = 1
+  'Tabular View',
+  'Graphical View'
 }
 
 export enum StatsDataFetchingCases {

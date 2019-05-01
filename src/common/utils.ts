@@ -20,7 +20,7 @@ export function sendMessageToBackgroundScript(
 }
 
 export function timeout(ms) {
-  return new Promise((resolve) => setTimeout(resolve, ms));
+  return new Promise(resolve => setTimeout(resolve, ms));
 }
 
 export function convertUserIdToSavableForm(userId: string): string {
@@ -117,7 +117,7 @@ export function convertEnumToArray(
     value: string;
   }> = [];
 
-  Object.keys(enumType).forEach((name) => {
+  Object.keys(enumType).forEach(name => {
     const value = enumType[name];
     if (!isNaN(Number(value))) {
       arr.push({
@@ -190,7 +190,7 @@ export function formatDate(watchedOnDate: Date, dateFormat: string): string {
         1}-${watchedOnDate.getFullYear()}`;
       break;
 
-    case 'DDD, dd mmm\'yy':
+    case "DDD, dd mmm'yy":
       const dateString: string = watchedOnDate.toDateString();
       const splitDateString: string[] = dateString.split(' ');
       const day: string = splitDateString[0];

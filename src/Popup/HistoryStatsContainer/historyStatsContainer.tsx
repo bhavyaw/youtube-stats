@@ -1,6 +1,6 @@
 import * as React from 'react';
-import StatsTabularView from './tabularStats';
-import StatsGraphicalView from './graphicalStats';
+import StatsTabularView from '../components/tabularStats';
+import StatsGraphicalView from '../components/graphicalStats';
 import {
   StatsIntervalOptions,
   StatsDisplayTypes,
@@ -8,7 +8,6 @@ import {
   ExtensionModule
 } from 'interfaces';
 import { convertEnumToArray, sendMessageToBackgroundScript } from 'common/utils';
-import DatePicker from 'react-datepicker';
 import { IYoutubeDayStats } from 'interfaces';
 
 import 'react-datepicker/dist/react-datepicker.css';
@@ -17,6 +16,9 @@ import isEmpty = require('lodash/isEmpty');
 import isArray = require('lodash/isArray');
 import { appConfig } from 'config';
 import User from 'models/UserModel';
+
+import * as Styles from './HistoryStatsContainer.module.scss';
+import StatsFinderControls from './StatsFinderControls';
 
 export interface Props {
   selectedUserId: string;
@@ -27,6 +29,7 @@ export interface State {
   historyStats?: any;
   selectedStatsInterval?: number;
   selectedDate?: Date;
+  fetchingStatsInProgress: boolean;
 }
 
 class HistoryStatsContainer extends React.Component<Props, State> {
@@ -46,7 +49,8 @@ class HistoryStatsContainer extends React.Component<Props, State> {
       historyStats: {
         ...this.BLANK_HISTORY_STATE_OBJECT
       },
-      selectedDate: new Date()
+      selectedDate: new Date(),
+      fetchingStatsInProgress: true
     };
     this.statsIntervalOptions = convertEnumToArray(StatsIntervalOptions);
     this.statsDisplayType = convertEnumToArray(StatsDisplayTypes);
@@ -90,7 +94,9 @@ class HistoryStatsContainer extends React.Component<Props, State> {
     this.fetchStats(newSelectedDate, undefined, undefined, StatsDataFetchingCases.date);
   };
 
-  public handleStatDisplayTypeChange = newDisplayTypeValue => {
+  public handleStatDisplayTypeChange = e => {
+    let newDisplayTypeValue: string | number = e.target.value as string;
+    newDisplayTypeValue = Number(newDisplayTypeValue);
     console.log(`New display type value is :`, newDisplayTypeValue);
     this.setState({
       selectedStatDisplayType: newDisplayTypeValue
@@ -133,48 +139,56 @@ class HistoryStatsContainer extends React.Component<Props, State> {
     newSelectedStatsInterval = this.state.selectedStatsInterval,
     statsDataFetchingCase: StatsDataFetchingCases
   ) => {
-    // console.log(`Sending message to abckground script to fetch history stats : `, selectedDate, selectedUserId);
-    const requestData = {
-      selectedStatsInterval: newSelectedStatsInterval,
-      selectedDate: newSelectedDate,
-      selectedUserId: newSelectedUserId
-    };
-
-    const response: IYoutubeDayStats[] = await this.fetchStatsDataFromBackground(requestData);
-
-    if (!isEmpty(response)) {
-      const { historyStats } = this.state;
-      const lastLoadedHistoryStats: IYoutubeDayStats[] =
-        historyStats[newSelectedStatsInterval] || [];
-      const newHistoryStats: IYoutubeDayStats[] =
-        statsDataFetchingCase === StatsDataFetchingCases.loadMore
-          ? lastLoadedHistoryStats.concat(response)
-          : response;
-
-      this.setState(prevState => {
-        const statsForOtherIntervals =
-          statsDataFetchingCase === StatsDataFetchingCases.interval ||
-          statsDataFetchingCase === StatsDataFetchingCases.loadMore
-            ? prevState.historyStats
-            : this.BLANK_HISTORY_STATE_OBJECT;
-        const newState =
-          statsDataFetchingCase === StatsDataFetchingCases.loadMore
-            ? {}
-            : {
-                selectedStatsInterval: newSelectedStatsInterval,
-                selectedDate: newSelectedDate,
-                selectedUserId: newSelectedUserId
-              };
-
-        return {
-          ...newState,
-          historyStats: {
-            ...statsForOtherIntervals,
-            [newSelectedStatsInterval]: newHistoryStats
-          }
+    this.setState(
+      {
+        fetchingStatsInProgress: true
+      },
+      async () => {
+        // console.log(`Sending message to abckground script to fetch history stats : `, selectedDate, selectedUserId);
+        const requestData = {
+          selectedStatsInterval: newSelectedStatsInterval,
+          selectedDate: newSelectedDate,
+          selectedUserId: newSelectedUserId
         };
-      });
-    }
+
+        const response: IYoutubeDayStats[] = await this.fetchStatsDataFromBackground(requestData);
+
+        if (!isEmpty(response)) {
+          const { historyStats } = this.state;
+          const lastLoadedHistoryStats: IYoutubeDayStats[] =
+            historyStats[newSelectedStatsInterval] || [];
+          const newHistoryStats: IYoutubeDayStats[] =
+            statsDataFetchingCase === StatsDataFetchingCases.loadMore
+              ? lastLoadedHistoryStats.concat(response)
+              : response;
+
+          this.setState(prevState => {
+            const statsForOtherIntervals =
+              statsDataFetchingCase === StatsDataFetchingCases.interval ||
+              statsDataFetchingCase === StatsDataFetchingCases.loadMore
+                ? prevState.historyStats
+                : this.BLANK_HISTORY_STATE_OBJECT;
+            const newState =
+              statsDataFetchingCase === StatsDataFetchingCases.loadMore
+                ? {}
+                : {
+                    selectedStatsInterval: newSelectedStatsInterval,
+                    selectedDate: newSelectedDate,
+                    selectedUserId: newSelectedUserId
+                  };
+
+            return {
+              ...newState,
+              historyStats: {
+                ...statsForOtherIntervals,
+                [newSelectedStatsInterval]: newHistoryStats
+              },
+              fetchingStatsInProgress: false
+            };
+          });
+        }
+      }
+    );
   };
 
   public handleLoadMoreClick = (historyStats: IYoutubeDayStats[]) => {
@@ -226,7 +240,7 @@ class HistoryStatsContainer extends React.Component<Props, State> {
 
   public render() {
     const { historyStats, selectedStatsInterval, selectedDate } = this.state;
-    const { selectedStatDisplayType } = this.state;
+    const { selectedStatDisplayType, fetchingStatsInProgress } = this.state;
     const selectedIntervalHistoryStats: any = historyStats[selectedStatsInterval] || [];
 
     console.log(
@@ -235,50 +249,51 @@ class HistoryStatsContainer extends React.Component<Props, State> {
       selectedStatDisplayType,
       historyStats
     );
-    return (
-      <section>
-        {selectedStatsInterval && (
-          <section className="my-1">
-            <DatePicker selected={selectedDate} onChange={this.handleStatsDateChange} />
-            <select value={selectedStatsInterval} onChange={this.handleStatIntervalChange}>
-              {this.statsIntervalOptions.map(({ name, value }) => (
-                <option value={value} key={`key_${value}`}>
-                  {name}
-                </option>
-              ))}
-            </select>
+    return selectedStatsInterval ? (
+      <section className={`${Styles.statsFinder} card shadow-sm`}>
+        <section className="card-header px-2 py-0">Stats Finder</section>
+        <section className="card-body py-0 px-2">
+          <StatsFinderControls
+            selectedDate={selectedDate}
+            fetchingStatsInProgress={fetchingStatsInProgress}
+            selectedStatsInterval={selectedStatsInterval}
+            selectedStatDisplayType={selectedStatDisplayType}
+            onIntervalStatsChange={this.handleStatIntervalChange}
+            handleStatDisplayTypeChange={this.handleStatDisplayTypeChange}
+            onStatsDateChange={this.handleStatsDateChange}
+            parentStyles={Styles}
+            statsIntervalOptions={this.statsIntervalOptions}
+            statsDisplayTypes={this.statsDisplayType}
+          />
+          {fetchingStatsInProgress && (
+            <div className={`${Styles.spinnerGrowCustom} spinner-grow text-primary`} />
+          )}
 
-            <div>
-              {this.statsDisplayType.map(({ name, value }) => (
-                <span
-                  className={selectedStatDisplayType === value ? 'active' : ''}
-                  key={`key_${name}`}
-                  onClick={this.handleStatDisplayTypeChange.bind(this, value)}
-                >
-                  {name}
-                </span>
-              ))}
-            </div>
-            <React.Fragment>
-              {selectedStatDisplayType === StatsDisplayTypes.Table ? (
-                <StatsTabularView
-                  selectedStatsInterval={selectedStatsInterval}
-                  selectedIntervalHistoryStats={selectedIntervalHistoryStats}
-                />
-              ) : (
-                <StatsGraphicalView
-                  selectedStatsInterval={selectedStatsInterval}
-                  selectedIntervalHistoryStats={selectedIntervalHistoryStats}
-                />
-              )}
-              <button onClick={this.handleLoadMoreClick.bind(this, selectedIntervalHistoryStats)}>
-                Load More
-              </button>
-            </React.Fragment>
-          </section>
-        )}
+          {selectedStatDisplayType === StatsDisplayTypes['Tabular View'] ? (
+            <StatsTabularView
+              selectedStatsInterval={selectedStatsInterval}
+              selectedIntervalHistoryStats={selectedIntervalHistoryStats}
+              parentStyles={Styles}
+            />
+          ) : (
+            <StatsGraphicalView
+              parentStyles={Styles}
+              selectedStatsInterval={selectedStatsInterval}
+              selectedIntervalHistoryStats={selectedIntervalHistoryStats}
+            />
+          )}
+          {selectedIntervalHistoryStats.length > 0 && (
+            <button
+              className="btn btn-outline-primary rounded-0 py-0 w-100 mb-1"
+              disabled={fetchingStatsInProgress}
+              onClick={this.handleLoadMoreClick.bind(this, selectedIntervalHistoryStats)}
+            >
+              Load More
+            </button>
+          )}
+        </section>
       </section>
-    );
+    ) : null;
   }
 }
 

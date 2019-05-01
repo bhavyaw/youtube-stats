@@ -1,0 +1,42 @@
+$statsViewContainerHeight: 200px;
+$statsContainerMaxWidth: 500px;
+
+.spinner-grow-custom {
+  position: absolute;
+  top: 0;
+  left: 0;
+  bottom: 0;
+  right: 0;
+  margin: auto;
+}
+
+.child-view-selector-wrapper {
+  & > {
+    button:first-child {
+      border-top-right-radius: 0;
+      border-bottom-right-radius: 0;
+    }
+
+    button:last-child {
+      border-top-left-radius: 0;
+      border-bottom-left-radius: 0;
+    }
+  }
+}
+
+.tabular-view-container {
+  height: $statsViewContainerHeight;
+  overflow: auto;
+
+  > table {
+    th,
+    td {
+      white-space: nowrap;
+    }
+  }
+}
+
+.graphical-view-container {
+  height: $statsViewContainerHeight;
+  max-width: $statsContainerMaxWidth;
+}
