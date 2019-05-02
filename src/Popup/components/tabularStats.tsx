@@ -1,6 +1,6 @@
 import * as React from 'react';
 import { IYoutubeDayStats } from 'interfaces';
-import appStrings from 'appStrings';
+import { APP_MESSAGES } from 'appMessages';
 import isEmpty = require('lodash/isEmpty');
 import { statDisplayFields } from 'config';
 
@@ -33,7 +33,7 @@ class HistoryTabularStats extends React.Component<Props, State> {
                 <tr>
                   {displayFields.map(displayField => (
                     <th className="py-0 font-weight-normal" key={`key_${displayField}`}>
-                      {appStrings.statsFieldDisplayNames[displayField]}
+                      {APP_MESSAGES.statsFieldDisplayNames[displayField]}
                     </th>
                   ))}
                 </tr>

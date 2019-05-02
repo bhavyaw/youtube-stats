@@ -3,7 +3,7 @@ import { IYoutubeDayStats } from 'interfaces';
 import { BarChart, CartesianGrid, XAxis, YAxis, Tooltip, Legend, Brush, Bar } from 'recharts';
 import { statDisplayFields } from 'config';
 import isEmpty = require('lodash/isEmpty');
-import appStrings from 'appStrings';
+import { APP_MESSAGES } from 'appMessages';
 import { convertDurationToProperFormat } from 'common/utils';
 
 export interface Props {
@@ -37,7 +37,7 @@ class HistoryGraphicalStats extends React.Component<Props, State> {
             <Tooltip
               formatter={(value, name, props) => {
                 const { payload, dataKey } = props;
-                const statsFieldDisplayNames = appStrings.statsFieldDisplayNames;
+                const statsFieldDisplayNames = APP_MESSAGES.statsFieldDisplayNames;
 
                 if (dataKey === 'totalCount') {
                   return [payload[dataKey], statsFieldDisplayNames[dataKey]];

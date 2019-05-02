@@ -12,7 +12,7 @@ import isEmpty = require('lodash/isEmpty');
 import { isNumber } from 'lodash';
 import YoutubeHistoryStats from 'models/IntervalStats';
 import { showDesktopNotification, isValidDate } from 'common/utils';
-import appStrings from 'appStrings';
+import { APP_MESSAGES } from 'appMessages';
 import User from 'models/UserModel';
 import App from 'models/AppModel';
 
@@ -41,17 +41,24 @@ async function initializeBackgroundScript() {
 
 function handleBrowserStartEvent() {
   // showDesktopNotification(`Browser has started!!!`);
-  // intiateRefreshCycle();
+  intiateRefreshCycle();
   listenToTabEvents();
   chrome.runtime.onMessage.addListener(function(
     message: IExtensionEventMessage,
     sender: any,
     sendResponseFunc: Function
   ) {
-    console.log(`Background Scripts : Message received : `, message, ExtensionModule[sender]);
+    const senderTab: chrome.tabs.Tab = sender.tab;
+    const senderTabId: number = senderTab.id;
+
     if (message.sender === ExtensionModule.Popup) {
+      console.log(`Background Script : Message received from PopUp script: `, message);
       (handleMessagesFromPopupScript as any)(...arguments);
-    } else if (message.sender === ExtensionModule.ContentScript) {
+    } else if (
+      message.sender === ExtensionModule.ContentScript &&
+      senderTabId === activityControlsTabId
+    ) {
+      console.log(`Background Script : Message received from Content script: `, message);
       (handleMessagesFromContentScript as any)(...arguments);
     }
     return true;
@@ -60,7 +67,7 @@ function handleBrowserStartEvent() {
 
 function runRefreshCycle() {
   if (activityControlsTabId) {
-    showDesktopNotification(appStrings.alreadyRefreshing, 'Notice');
+    showDesktopNotification(APP_MESSAGES.alreadyRefreshing, 'Notice');
     return;
   }
 
@@ -70,7 +77,7 @@ function runRefreshCycle() {
       active: false,
       pinned: true,
       index: 0,
-      url: `https://myaccount.google.com/activitycontrols`
+      url: APP_CONSTANTS.ACTIVITY_CONTROLS_PAGE_URL
     },
     (tab: chrome.tabs.Tab) => {
       activityControlsTabId = tab.id;
@@ -93,7 +100,7 @@ function listenToTabEvents() {
         console.log('Activity controls tab opened via extension programmatically');
         if (tab.id === activityControlsTabId) {
           runPreRefreshCycleChecks(tab);
-        } else if (urlHash === appStrings.extensionUrlHash) {
+        } else if (urlHash === APP_CONSTANTS.EXTENSION_URL_HASH) {
           // delete stale extraction tabs
           chrome.tabs.remove(tab.id);
         }
@@ -102,7 +109,7 @@ function listenToTabEvents() {
       if (
         myActivityPageRegex.test(completeUrl) &&
         tab.id !== activityControlsTabId &&
-        urlHash.includes(appStrings.extensionUrlHash)
+        urlHash.includes(APP_CONSTANTS.EXTENSION_URL_HASH)
       ) {
         console.log(`MyActivity tab opened by extension`, tab);
         // delete stale extraction tabs

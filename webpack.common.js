@@ -29,7 +29,7 @@ console.log('\n\nMain Entries : ', mainEntries, '\n\nCommon Entries : ', commonE
 
 module.exports = {
   mode: 'development',
-  devtool: 'eval-source-map',
+  devtool: 'inline-source-map',
   entry: Object.assign(mainEntries, {
     common: values(commonEntries),
     vendor: ['object-validate', 'receptor', 'qs', 'axios', 'lodash', 'react', 'react-dom']
@@ -102,7 +102,7 @@ module.exports = {
       appConstants: path.resolve(__dirname, 'src/appConstants'),
       config: path.resolve(__dirname, 'src/appConfig'),
       globals: path.resolve(__dirname, 'src/appGlobals'),
-      appStrings: path.resolve(__dirname, 'src/appStrings'),
+      appMessages: path.resolve(__dirname, 'src/appMessages'),
       assets: path.resolve(__dirname, 'src/assets')
     }
   }

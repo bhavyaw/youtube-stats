@@ -72,7 +72,7 @@ class ContinuationDataService {
           userId
         };
       } else {
-        newlyWatchedVideos = newlyWatchedVideos.map((video) => new YoutubeVideo(video));
+        newlyWatchedVideos = newlyWatchedVideos.map(video => new YoutubeVideo(video));
         message = {
           type: APP_CONSTANTS.DATA_EXCHANGE_TYPE.CONTINUATION_DATA,
           data: {

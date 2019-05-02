@@ -22,7 +22,7 @@
       "appConstants": ["appConstants.ts"],
       "config": ["appConfig.ts"],
       "globals": ["appGlobals.ts"],
-      "appStrings": ["appStrings.ts"],
+      "appMessages": ["appMessages.ts"],
       "models": ["src/models/*"],
       "assets": ["src/assets"]
     }

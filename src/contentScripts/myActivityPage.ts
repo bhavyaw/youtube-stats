@@ -1,4 +1,4 @@
-import appStrings from 'appStrings';
+import { APP_MESSAGES } from 'appMessages';
 import { sendMessageToBackgroundScript, getActivePage } from 'common/utils';
 import { APP_CONSTANTS } from 'appConstants';
 import { IExtensionEventMessage, IYoutubeVideo, ActivePage, ExtensionModule } from 'interfaces';
@@ -22,7 +22,7 @@ function startContentScript() {
 
 function windowOnloadHandler() {
   console.log(`Youtube History item page loaded...`);
-  extractUserID();
+  extractPageDetails();
 }
 
 function extensionMessageListener() {
@@ -36,7 +36,7 @@ async function handleMessageFromBackgroundScript(
 ) {
   console.log('inside handle messages from the backgroud script : ', messages, sender);
   if (!sender.tab) {
-    messages.forEach((message) => {
+    messages.forEach(message => {
       const messageType = message.type;
       const data: any = message.data;
       const userId: string = message.userId;
@@ -44,7 +44,7 @@ async function handleMessageFromBackgroundScript(
       switch (messageType) {
         case APP_CONSTANTS.DATA_EXCHANGE_TYPE.GET_INITIAL_YOUTUBE_HISTORY_DATA:
           const lastSavedVideoDetails: IYoutubeVideo = data;
-          document.title = appStrings.myActivityPageNewTitle;
+          document.title = APP_CONSTANTS.MY_ACTIVITY_PAGE_NEW_TITLE;
           startDataExtractionProcess(lastSavedVideoDetails);
           break;
 
@@ -62,7 +62,7 @@ async function handleMessageFromBackgroundScript(
   }
 }
 
-async function extractUserID() {
+async function extractPageDetails() {
   console.log('inside extract user Id');
   await loadExternalDataFetchingScript(
     '/js/variableAccessScriptNew.js',
@@ -75,7 +75,7 @@ async function extractUserID() {
   const activePage: ActivePage = getActivePage(activeUrl);
   sendMessageToVariableAccessScript(
     {
-      type: APP_CONSTANTS.DATA_EXCHANGE_TYPE.GET_USER_ID,
+      type: APP_CONSTANTS.DATA_EXCHANGE_TYPE.EXTRACT_MY_ACTIVITY_PAGE_DATA,
       activePage
     },
     ExtensionModule.ContentScript
@@ -99,6 +99,17 @@ function postUserIdRetrivalFromVarAccessScript(message: IExtensionEventMessage) 
     message.userId
   );
   const { data, userId } = message;
+
+  if (!userId) {
+    sendMessageToBackgroundScript(
+      {
+        type: APP_CONSTANTS.DATA_EXCHANGE_TYPE.ERROR,
+        error_msg: APP_MESSAGES.ERROR_MESSAGES.noUserIdInExtraction
+      },
+      ExtensionModule.ContentScript
+    );
+    return;
+  }
   const { isActiveUserLoggedIn, activeUserInPopup } = checkIfCorrectUserIsLoggedIn(userId);
 
   if (isActiveUserLoggedIn) {
@@ -152,7 +163,7 @@ function logInToActiveUserAccount(activeUserInPopup: string) {
   // TODO : move the selector in the constants file
   let userLoginDivs: any = document.querySelectorAll(`a .gb_Fb`);
   userLoginDivs = Array.from(userLoginDivs);
-  let activeUserLoginDiv: HTMLDivElement = userLoginDivs.filter((userLoginDiv) => {
+  let activeUserLoginDiv: HTMLDivElement = userLoginDivs.filter(userLoginDiv => {
     return userLoginDiv.textContent.includes(activeUserInPopup);
   });
 

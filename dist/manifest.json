@@ -1,45 +1,58 @@
 {
     "manifest_version": 2,
-
     "name": "Youtube History Chrome Extension",
     "description": "",
     "version": "1.0.0",
-
     "browser_action": {
         "default_icon": "icon16.png",
         "default_popup": "popup.html"
     },
-
     "icons": {
         "16": "icon16.png",
         "48": "icon48.png",
         "128": "icon128.png"
     },
-    "content_security_policy": "script-src 'self' 'unsafe-eval'; object-src 'self'",
-    "content_scripts": [{
-            "matches": ["https://myaccount.google.com/*activitycontrols*"],
-            "js": ["./js/vendor.js", "./js/activityControlsPage.js"]
+    "content_security_policy": "script-src 'self'; object-src 'self'",
+    "content_scripts": [
+        {
+            "matches": [
+                "https://myaccount.google.com/*activitycontrols*"
+            ],
+            "js": [
+                "./js/vendor.js",
+                "./js/activityControlsPage.js"
+            ]
         },
         {
-            "matches": ["https://myactivity.google.com/item*"],
-            "js": ["./js/vendor.js", "./js/myActivityPage.js"]
+            "matches": [
+                "https://myactivity.google.com/item*"
+            ],
+            "js": [
+                "./js/vendor.js",
+                "./js/myActivityPage.js"
+            ]
         },
         {
-            "matches": ["https://www.youtube.com/feed/history"],
-            "js": ["./js/vendor.js", "./js/youtubeHistoryPage.js"]
+            "matches": [
+                "https://www.youtube.com/feed/history"
+            ],
+            "js": [
+                "./js/vendor.js",
+                "./js/youtubeHistoryPage.js"
+            ]
         }
     ],
-
     "background": {
-        "scripts": ["js/vendor.js", "js/background.js"],
+        "scripts": [
+            "js/vendor.js",
+            "js/background.js"
+        ],
         "persistent": false
     },
-
     "web_accessible_resources": [
         "js/variableAccessScriptNew.js",
         "js/youtubeHistoryPageVariableAccessor.js"
     ],
-
     "permissions": [
         "tabs",
         "storage",
